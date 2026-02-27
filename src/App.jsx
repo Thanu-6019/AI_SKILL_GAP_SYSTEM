@@ -1,6 +1,6 @@
 import { BrowserRouter } from 'react-router-dom';
-import { SkillGapProvider } from './context';
 import AppRoutes from './routes/AppRoutes';
+import { SkillGapProvider } from './context/SkillGapContext';
 import './App.css';
 
 function App() {

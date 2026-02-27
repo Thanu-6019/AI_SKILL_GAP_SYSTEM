@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback } from 'react';
+import { resumeAPI, skillsAPI } from '../services';
 
 const SkillGapContext = createContext();
 
@@ -86,204 +87,120 @@ export const SkillGapProvider = ({ children }) => {
     setResumeFile(file);
     setProcessingStatus(prev => ({ ...prev, isProcessing: true, currentStep: 0 }));
 
-    // Simulate processing steps
-    for (let i = 0; i < 4; i++) {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      console.log(`✅ Context: Completed step ${i + 1}/4`);
-      setProcessingStatus(prev => ({ ...prev, currentStep: i + 1 }));
+    try {
+      // Step 1: Upload resume to backend
+      console.log('📤 Uploading resume to backend...');
+      setProcessingStatus(prev => ({ ...prev, currentStep: 1 }));
+      
+      const uploadResponse = await resumeAPI.upload(file);
+      console.log('✅ Resume uploaded:', uploadResponse);
+
+      if (!uploadResponse.success) {
+        throw new Error(uploadResponse.error || 'Failed to upload resume');
+      }
+
+      const { resumeId, extractedSkills, personalInfo, aiConfidence } = uploadResponse.data;
+      
+      // Store resume data
+      setResumeData({
+        id: resumeId,
+        personalInfo,
+        aiConfidence,
+      });
+      setExtractedSkills(extractedSkills);
+
+      // Step 2: Match roles using backend AI
+      console.log('🎯 Matching roles with AI...');
+      setProcessingStatus(prev => ({ ...prev, currentStep: 2 }));
+      
+      const rolesResponse = await skillsAPI.matchRoles(resumeId, 5);
+      console.log('✅ Roles matched:', rolesResponse);
+
+      if (!rolesResponse.success) {
+        throw new Error(rolesResponse.error || 'Failed to match roles');
+      }
+
+      const matchedRolesData = rolesResponse.data.roles.map((role, index) => ({
+        id: role.id || index + 1,
+        title: role.title,
+        matchScore: role.matchScore,
+        salaryRange: role.salaryRange,
+        requiredSkills: role.requiredSkills,
+        demandLevel: role.demandLevel,
+        companies: role.companies,
+        type: role.type || 'AI Recommended Role',
+      }));
+
+      setMatchedRoles(matchedRolesData);
+
+      // Complete processing
+      console.log('✅ Processing complete!');
+      setProcessingStatus(prev => ({ ...prev, currentStep: 4, isProcessing: false }));
+
+      return { skills: extractedSkills, roles: matchedRolesData };
+
+    } catch (error) {
+      console.error('❌ Error processing resume:', error);
+      setProcessingStatus(prev => ({ ...prev, isProcessing: false }));
+      
+      // Show error to user
+      alert(`Failed to process resume: ${error.message}\n\nPlease make sure:\n1. Backend server is running (port 5000)\n2. MongoDB is connected\n3. OpenAI API key is configured`);
+      
+      throw error;
     }
-
-    // Mock extracted skills
-    const mockExtractedSkills = [
-      { name: 'React', level: 75, category: 'Frontend', yearsOfExperience: 2 },
-      { name: 'JavaScript', level: 80, category: 'Language', yearsOfExperience: 3 },
-      { name: 'Node.js', level: 70, category: 'Backend', yearsOfExperience: 2 },
-      { name: 'Git', level: 85, category: 'Tools', yearsOfExperience: 3 },
-      { name: 'CSS', level: 70, category: 'Frontend', yearsOfExperience: 3 },
-      { name: 'HTML', level: 90, category: 'Frontend', yearsOfExperience: 3 },
-      { name: 'REST APIs', level: 75, category: 'Backend', yearsOfExperience: 2 },
-      { name: 'MongoDB', level: 65, category: 'Database', yearsOfExperience: 1 },
-    ];
-
-    // Mock matched roles
-    const mockMatchedRoles = [
-      {
-        id: 1,
-        title: 'Frontend Developer',
-        matchScore: 82,
-        salaryRange: '$70K - $100K',
-        requiredSkills: ['React', 'TypeScript', 'JavaScript', 'CSS', 'HTML', 'Redux', 'Webpack'],
-        demandLevel: 'High',
-        companies: 150,
-      },
-      {
-        id: 2,
-        title: 'Full Stack Developer',
-        matchScore: 75,
-        salaryRange: '$80K - $120K',
-        requiredSkills: ['React', 'Node.js', 'TypeScript', 'MongoDB', 'AWS', 'Docker', 'GraphQL'],
-        demandLevel: 'Very High',
-        companies: 230,
-      },
-      {
-        id: 3,
-        title: 'JavaScript Developer',
-        matchScore: 78,
-        salaryRange: '$65K - $95K',
-        requiredSkills: ['JavaScript', 'TypeScript', 'React', 'Vue.js', 'Node.js', 'Express'],
-        demandLevel: 'High',
-        companies: 180,
-      },
-      {
-        id: 4,
-        title: 'React Developer',
-        matchScore: 85,
-        salaryRange: '$75K - $110K',
-        requiredSkills: ['React', 'Redux', 'TypeScript', 'JavaScript', 'Next.js', 'Testing Library'],
-        demandLevel: 'Very High',
-        companies: 200,
-      },
-      {
-        id: 5,
-        title: 'Web Developer',
-        matchScore: 80,
-        salaryRange: '$60K - $90K',
-        requiredSkills: ['HTML', 'CSS', 'JavaScript', 'React', 'Responsive Design', 'Git'],
-        demandLevel: 'Medium',
-        companies: 120,
-      },
-    ];
-
-    setExtractedSkills(mockExtractedSkills);
-    setMatchedRoles(mockMatchedRoles);
-    setProcessingStatus(prev => ({ ...prev, isProcessing: false }));
-
-    return { skills: mockExtractedSkills, roles: mockMatchedRoles };
   }, []);
 
   // Calculate skill gap for selected role
-  const calculateSkillGap = useCallback((role) => {
+  const calculateSkillGap = useCallback(async (role) => {
     setSelectedRole(role);
 
-    // Mock skill gap calculation
-    const mockMissingSkills = [
-      { name: 'TypeScript', priority: 'High', requiredLevel: 85, currentLevel: 0, demand: 95 },
-      { name: 'AWS', priority: 'High', requiredLevel: 75, currentLevel: 0, demand: 90 },
-      { name: 'Docker', priority: 'Medium', requiredLevel: 80, currentLevel: 0, demand: 85 },
-      { name: 'Redux', priority: 'Medium', requiredLevel: 70, currentLevel: 0, demand: 80 },
-    ];
+    try {
+      console.log('📊 Analyzing skill gap with backend AI...');
+      
+      // Call backend API to analyze skill gap
+      const response = await skillsAPI.analyzeGap(resumeData.id, {
+        title: role.title,
+        requiredSkills: role.requiredSkills,
+        category: role.category || 'Technology',
+      });
 
-    const mockWeakSkills = [
-      { name: 'Node.js', currentLevel: 70, requiredLevel: 85, gap: 15, priority: 'High' },
-      { name: 'MongoDB', currentLevel: 65, requiredLevel: 80, gap: 15, priority: 'Medium' },
-      { name: 'React', currentLevel: 75, requiredLevel: 90, gap: 15, priority: 'High' },
-    ];
+      console.log('✅ Skill gap analysis complete:', response);
 
-    const mockStrongSkills = [
-      { name: 'JavaScript', currentLevel: 80, requiredLevel: 85, gap: 5 },
-      { name: 'Git', currentLevel: 85, requiredLevel: 85, gap: 0 },
-      { name: 'HTML', currentLevel: 90, requiredLevel: 85, gap: 0 },
-      { name: 'CSS', currentLevel: 70, requiredLevel: 70, gap: 0 },
-    ];
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to analyze skill gap');
+      }
 
-    const mockRecommendedCourses = [
-      {
-        id: 1,
-        title: 'TypeScript Fundamentals for React Developers',
-        provider: 'Udemy',
-        duration: '8 hours',
-        rating: 4.8,
-        students: 45000,
-        relevance: 98,
-        price: '$49.99',
-        skills: ['TypeScript', 'React'],
-        level: 'Intermediate',
-      },
-      {
-        id: 2,
-        title: 'AWS Certified Solutions Architect',
-        provider: 'Coursera',
-        duration: '40 hours',
-        rating: 4.7,
-        students: 120000,
-        relevance: 92,
-        price: '$79.99',
-        skills: ['AWS', 'Cloud Computing'],
-        level: 'Advanced',
-      },
-      {
-        id: 3,
-        title: 'Docker & Kubernetes: The Complete Guide',
-        provider: 'Pluralsight',
-        duration: '12 hours',
-        rating: 4.9,
-        students: 35000,
-        relevance: 88,
-        price: '$29.99',
-        skills: ['Docker', 'Kubernetes', 'DevOps'],
-        level: 'Intermediate',
-      },
-      {
-        id: 4,
-        title: 'Advanced React Patterns & Redux Mastery',
-        provider: 'Frontend Masters',
-        duration: '10 hours',
-        rating: 4.8,
-        students: 25000,
-        relevance: 95,
-        price: '$39.99',
-        skills: ['React', 'Redux', 'State Management'],
-        level: 'Advanced',
-      },
-      {
-        id: 5,
-        title: 'Node.js Advanced Concepts',
-        provider: 'Udemy',
-        duration: '16 hours',
-        rating: 4.7,
-        students: 50000,
-        relevance: 90,
-        price: '$54.99',
-        skills: ['Node.js', 'Express', 'Backend'],
-        level: 'Advanced',
-      },
-    ];
+      const analysisData = response.data;
 
-    const mockRoadmap = [
-      {
-        phase: 1,
-        title: 'Foundation Enhancement',
-        duration: '4-6 weeks',
-        skills: ['TypeScript', 'React Advanced'],
-        milestones: ['Complete TypeScript course', 'Build 2 React projects'],
-      },
-      {
-        phase: 2,
-        title: 'Backend & DevOps',
-        duration: '6-8 weeks',
-        skills: ['Node.js', 'Docker', 'AWS Basics'],
-        milestones: ['Deploy containerized app', 'AWS certification prep'],
-      },
-      {
-        phase: 3,
-        title: 'Production Ready',
-        duration: '4-6 weeks',
-        skills: ['Redux', 'Testing', 'CI/CD'],
-        milestones: ['Build full-stack app', 'Interview preparation'],
-      },
-    ];
+      // Update state with real analysis from backend
+      setSkillGapData({
+        overallScore: analysisData.overallScore,
+        missingSkills: analysisData.missingSkills,
+        weakSkills: analysisData.weakSkills,
+        strongSkills: analysisData.strongSkills,
+        aiConfidence: analysisData.aiConfidence,
+      });
 
-    setSkillGapData({
-      overallScore: role.matchScore,
-      missingSkills: mockMissingSkills,
-      weakSkills: mockWeakSkills,
-      strongSkills: mockStrongSkills,
-      aiConfidence: 92,
-    });
+      setRecommendedCourses(analysisData.recommendedCourses);
+      setCareerRoadmap(analysisData.careerRoadmap);
 
-    setRecommendedCourses(mockRecommendedCourses);
-    setCareerRoadmap(mockRoadmap);
-  }, []);
+      console.log('✅ Skill gap data updated in context');
+
+    } catch (error) {
+      console.error('❌ Error analyzing skill gap:', error);
+      
+      alert(`Failed to analyze skill gap: ${error.message}\n\nPlease make sure backend is running.`);
+      
+      // Set fallback data
+      setSkillGapData({
+        overallScore: 0,
+        missingSkills: [],
+        weakSkills: [],
+        strongSkills: [],
+        aiConfidence: 0,
+      });
+    }
+  }, [resumeData]);
 
   const value = {
     // State
