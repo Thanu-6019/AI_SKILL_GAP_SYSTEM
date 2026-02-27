@@ -2,7 +2,7 @@ export default {
   // Google Gemini AI Configuration
   gemini: {
     apiKey: process.env.GEMINI_API_KEY,
-    model: 'gemini-1.5-flash',
+    model: 'gemini-3-flash-preview',
     maxTokens: 2000,
     temperature: 0.7,
   },

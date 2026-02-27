@@ -13,7 +13,7 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '.env') });
 
 // Debug check (remove later if you want)
-console.log("OPENAI KEY LOADED:", process.env.OPENAI_API_KEY ? "YES" : "NO");
+console.log("GEMINI API KEY LOADED:", process.env.GEMINI_API_KEY ? "YES" : "NO");
 
 // ======================
 // IMPORTS

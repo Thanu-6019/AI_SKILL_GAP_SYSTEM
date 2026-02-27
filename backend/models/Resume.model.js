@@ -10,9 +10,9 @@ const skillSchema = new mongoose.Schema({
     min: 0,
     max: 100,
   },
-  category: {
+  category: {  
     type: String,
-    enum: ['Frontend', 'Backend', 'Database', 'DevOps', 'Language', 'Tools', 'Soft Skills', 'Other'],
+    // Allow any category string from AI
   },
   yearsOfExperience: {
     type: Number,

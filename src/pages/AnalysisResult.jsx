@@ -266,26 +266,30 @@ const AnalysisResult = () => {
                         </div>
                       </div>
                       
-                      <div className="mb-4">
-                        <h5 className="text-sm font-semibold text-slate-300 mb-2">Focus Skills:</h5>
-                        <div className="flex flex-wrap gap-2">
-                          {phase.skills.map((skill, idx) => (
-                            <Badge key={idx} variant="primary">{skill}</Badge>
-                          ))}
+                      {phase.focus && phase.focus.length > 0 && (
+                        <div className="mb-4">
+                          <h5 className="text-sm font-semibold text-slate-300 mb-2">Focus Skills:</h5>
+                          <div className="flex flex-wrap gap-2">
+                            {phase.focus.map((skill, idx) => (
+                              <Badge key={idx} variant="primary">{skill}</Badge>
+                            ))}
+                          </div>
                         </div>
-                      </div>
+                      )}
                       
-                      <div>
-                        <h5 className="text-sm font-semibold text-slate-300 mb-2">Milestones:</h5>
-                        <ul className="space-y-1">
-                          {phase.milestones.map((milestone, idx) => (
-                            <li key={idx} className="text-sm text-slate-400 flex items-start space-x-2">
-                              <CheckCircleIcon className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                              <span>{milestone}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+                      {phase.milestones && phase.milestones.length > 0 && (
+                        <div>
+                          <h5 className="text-sm font-semibold text-slate-300 mb-2">Milestones:</h5>
+                          <ul className="space-y-1">
+                            {phase.milestones.map((milestone, idx) => (
+                              <li key={idx} className="text-sm text-slate-400 flex items-start space-x-2">
+                                <CheckCircleIcon className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
+                                <span>{milestone}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -295,28 +299,37 @@ const AnalysisResult = () => {
         )}
 
         {/* Recommended Courses */}
-        <Card title="Recommended Courses" subtitle="Personalized learning path to bridge your gaps" icon={BookOpenIcon} className="mb-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
-            {analysisData.recommendedCourses.map((course, index) => (
-              <div 
-                key={index}
-                className="bg-slate-900/50 rounded-xl p-6 border border-slate-700 hover:border-blue-500/50 transition-all hover:scale-[1.02] group"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <h4 className="text-lg font-semibold text-white group-hover:text-blue-400 transition-colors flex-1">
-                    {course.title}
-                  </h4>
-                  <Badge variant="success" size="sm">{course.relevance}%</Badge>
+        {recommendedCourses && recommendedCourses.length > 0 && (
+          <Card title="Recommended Courses" subtitle="Personalized learning path to bridge your gaps" icon={BookOpenIcon} className="mb-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+              {recommendedCourses.map((course, index) => (
+                <div 
+                  key={index}
+                  className="bg-slate-900/50 rounded-xl p-6 border border-slate-700 hover:border-blue-500/50 transition-all hover:scale-[1.02] group"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <h4 className="text-lg font-semibold text-white group-hover:text-blue-400 transition-colors flex-1">
+                      {course.title}
+                    </h4>
+                    {course.relevance && <Badge variant="success" size="sm">{course.relevance}%</Badge>}
+                  </div>
+                  <p className="text-slate-400 text-sm mb-4">{course.provider}</p>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-400">⏱️ {course.duration}</span>
+                    {course.level && <Badge variant="neutral" size="sm">{course.level}</Badge>}
+                  </div>
+                  {course.skills && course.skills.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-1">
+                      {course.skills.map((skill, idx) => (
+                        <Badge key={idx} variant="primary" size="sm">{skill}</Badge>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <p className="text-slate-400 text-sm mb-4">{course.provider}</p>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-400">⏱️ {course.duration}</span>
-                  <span className="text-yellow-400">⭐ {course.rating}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
+              ))}
+            </div>
+          </Card>
+        )}
 
         {/* CTA Section */}
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-8 text-center">

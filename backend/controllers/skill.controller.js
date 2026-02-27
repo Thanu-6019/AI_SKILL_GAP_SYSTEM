@@ -69,12 +69,22 @@ export const analyzeGap = async (req, res, next) => {
     }
 
     console.log('📊 Analyzing skill gap...');
+    console.log('📝 User skills:', resume.extractedSkills?.length, 'skills');
+    console.log('🎯 Target role:', targetRole.title);
+    console.log('✅ Required skills:', targetRole.requiredSkills);
     
     // Use AI to analyze skill gap
     const gapAnalysis = await aiService.analyzeSkillGap(
       resume.extractedSkills,
       targetRole
     );
+
+    console.log('✅ Gap analysis result:', {
+      overallScore: gapAnalysis.overallScore,
+      missingSkills: gapAnalysis.missingSkills?.length,
+      weakSkills: gapAnalysis.weakSkills?.length,
+      strongSkills: gapAnalysis.strongSkills?.length,
+    });
 
     // Generate career advice
     const advice = await aiService.generateCareerAdvice({

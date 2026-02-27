@@ -144,7 +144,7 @@ export const SkillGapProvider = ({ children }) => {
       setProcessingStatus(prev => ({ ...prev, isProcessing: false }));
       
       // Show error to user
-      alert(`Failed to process resume: ${error.message}\n\nPlease make sure:\n1. Backend server is running (port 5000)\n2. MongoDB is connected\n3. OpenAI API key is configured`);
+      alert(`Failed to process resume: ${error.message}\n\nPlease make sure:\n1. Backend server is running (port 5000)\n2. MongoDB is connected\n3. Gemini API key is configured`);
       
       throw error;
     }
