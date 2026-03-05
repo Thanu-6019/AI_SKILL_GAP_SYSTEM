@@ -31,10 +31,11 @@ const Settings = () => {
     const loadUserProfile = async () => {
       if (user) {
         try {
-          // First, try to fetch from backend
+          // First, try to fetch from backend using environment variable
           const token = localStorage.getItem('token');
           if (token) {
-            const response = await fetch('http://localhost:5001/api/users/me', {
+            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
+            const response = await fetch(`${API_BASE_URL}/users/me`, {
               headers: {
                 'Authorization': `Bearer ${token}`,
               },
@@ -45,6 +46,8 @@ const Settings = () => {
               const backendUser = data.data;
               
               console.log('✅ [Settings] Loaded user profile from backend:', backendUser);
+              console.log('📋 Job Title:', backendUser.jobTitle);
+              console.log('🏢 Department:', backendUser.department);
               
               setProfileData({
                 name: backendUser.name || user.name || '',

@@ -150,12 +150,22 @@ const parseAIJSON = (text) => {
 export const extractSkillsFromText = async (resumeText) => {
   try {
     const result = await retryWithBackoff(async () => {
-      const prompt = `You are an expert resume analyzer. Extract skills from this resume and return ONLY valid JSON with this structure:
+      const prompt = `You are an expert resume analyzer. Extract skills and professional information from this resume and return ONLY valid JSON with this structure:
 {
   "skills": [{"name": "string", "level": 0-100, "category": "string (Frontend/Backend/Database/DevOps/Language/Tools/Other)", "yearsOfExperience": 0}],
-  "personalInfo": {"name": "string", "email": "string", "phone": "string", "location": "string", "summary": "string"},
+  "personalInfo": {
+    "name": "string", 
+    "email": "string", 
+    "phone": "string", 
+    "location": "string", 
+    "summary": "string",
+    "currentJobTitle": "string (extract current/most recent job title from work experience)",
+    "department": "string (infer department like Engineering, Marketing, Sales, IT, Design, HR, Finance, Operations, etc.)"
+  },
   "confidence": 0-100
 }
+
+IMPORTANT: Extract the current or most recent job title from the work experience section (e.g., "Software Engineer", "Senior Developer", "Product Manager"). Infer the department based on the job title and experience.
 
 Resume:
 ${resumeText.substring(0, 6000)}`;

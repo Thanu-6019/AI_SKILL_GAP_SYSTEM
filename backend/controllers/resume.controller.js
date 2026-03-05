@@ -85,6 +85,32 @@ export const uploadResume = async (req, res, next) => {
 
     console.log('✅ Resume saved to database');
 
+    // Update user's job title and department from resume analysis
+    if (req.user && aiAnalysis.personalInfo) {
+      try {
+        const User = (await import('../models/User.model.js')).default;
+        const updateData = {};
+        
+        if (aiAnalysis.personalInfo.currentJobTitle) {
+          updateData.jobTitle = aiAnalysis.personalInfo.currentJobTitle;
+          console.log('📋 Extracted Job Title:', aiAnalysis.personalInfo.currentJobTitle);
+        }
+        
+        if (aiAnalysis.personalInfo.department) {
+          updateData.department = aiAnalysis.personalInfo.department;
+          console.log('🏢 Extracted Department:', aiAnalysis.personalInfo.department);
+        }
+
+        if (Object.keys(updateData).length > 0) {
+          await User.findByIdAndUpdate(req.user._id, updateData, { new: true });
+          console.log('✅ User profile updated with job title and department');
+        }
+      } catch (updateError) {
+        console.error('⚠️ Failed to update user profile:', updateError.message);
+        // Don't fail the request, just log the error
+      }
+    }
+
     res.status(201).json({
       success: true,
       data: {
