@@ -10,6 +10,14 @@
 
 **An intelligent career development platform that analyzes your resume, identifies skill gaps, and provides personalized learning recommendations using AI.**
 
+### 🚀 **Live Demo**
+
+**Frontend**: [https://aiskillgapsystem-git-main-divyanjalis-projects.vercel.app](https://aiskillgapsystem-git-main-divyanjalis-projects.vercel.app)
+
+**Backend API**: [https://ai-skill-gap-system-2.onrender.com](https://ai-skill-gap-system-2.onrender.com)
+
+---
+
 📖 **[Complete Documentation →](PROJECT_DOCUMENTATION.md)** • 🚀 [Quick Start](#-quick-start) • 🛠️ [Setup](#-installation)
 
 </div>
