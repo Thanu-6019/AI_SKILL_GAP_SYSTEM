@@ -78,7 +78,7 @@ app.use(cors({
     const allowedOrigins = [
       'http://localhost:5173',
       'http://127.0.0.1:5173',
-      'https://aiskillgapsystem.vercel.app',        // Vercel deployment
+      'https://aiskillgapsystem.vercel.app',        // Vercel production
       'https://ai-skill-gap-system.onrender.com',   // Render frontend (if used)
       process.env.FRONTEND_URL                       // Environment variable override
     ].filter(Boolean); // Remove undefined values
@@ -88,15 +88,18 @@ app.use(cors({
       return callback(null, true);
     }
 
+    // Allow all Vercel preview deployments (*.vercel.app)
+    if (origin && origin.match(/^https:\/\/.+\.vercel\.app$/)) {
+      return callback(null, true);
+    }
+
     // Check if origin is in allowed list
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
 
-    // Log rejected origins in development
-    if (process.env.NODE_ENV !== 'production') {
-      console.warn(`⚠️  CORS blocked origin: ${origin}`);
-    }
+    // Log rejected origins in production for debugging
+    console.warn(`⚠️  CORS blocked origin: ${origin}`);
 
     // Reject others
     callback(new Error('Not allowed by CORS'));
