@@ -61,40 +61,70 @@ const CareerPathExplorer = () => {
     { name: 'Certification', priority: 'Low', estimatedTime: '1 month' },
   ];
 
-  // Dummy roadmap timeline
+  // Generate certifications for each missing skill
+  const generateCertificationsForSkills = (skills) => {
+    return skills.flatMap(skill => [
+      {
+        id: `cert-${skill.name}-1`,
+        courseName: `${skill.name} Fundamentals`,
+        platform: 'Coursera',
+        duration: '4 weeks',
+        certificationType: 'Professional Certificate',
+        relatedSkill: skill.name,
+        completed: false
+      },
+      {
+        id: `cert-${skill.name}-2`,
+        courseName: `Advanced ${skill.name}`,
+        platform: 'Udemy',
+        duration: '6 weeks',
+        certificationType: 'Specialization',
+        relatedSkill: skill.name,
+        completed: false
+      }
+    ]);
+  };
+
+  // Dummy roadmap timeline with certifications in Phase 1
   const dummyRoadmap = [
     {
       phase: 1,
-      title: 'Foundation Building',
+      title: 'Core Skill Improvement',
       duration: '2-3 months',
       status: 'upcoming',
       milestones: [
         'Complete foundational courses',
         'Build 2-3 beginner projects',
         'Join relevant communities'
-      ]
+      ],
+      certifications: generateCertificationsForSkills(dummyMissingSkills)
     },
     {
       phase: 2,
-      title: 'Skill Development',
+      title: 'Practical Application',
       duration: '3-4 months',
       status: 'upcoming',
       milestones: [
-        'Advanced certifications',
         'Real-world project experience',
-        'Networking with professionals'
+        'Networking with professionals',
+        'Build portfolio projects'
+      ],
+      projects: [
+        { name: 'Portfolio Project 1', completed: false },
+        { name: 'Capstone Project', completed: false }
       ]
     },
     {
       phase: 3,
       title: 'Career Transition',
       duration: '2-3 months',
-      status: 'upcoming',
+      status: 'locked',
       milestones: [
         'Portfolio development',
         'Interview preparation',
         'Job applications & networking'
-      ]
+      ],
+      internshipSuggestions: true
     }
   ];
 
@@ -108,7 +138,8 @@ const CareerPathExplorer = () => {
     <div className="min-h-screen bg-[#0f172a] text-slate-200">
       {/* Header */}
       <div className="bg-slate-900/50 border-b border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
+          <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
@@ -124,11 +155,13 @@ const CareerPathExplorer = () => {
               <span>Back to Roles</span>
             </button>
           </div>
+          </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-12">
+        <div className="max-w-7xl mx-auto">
         {/* Header Section */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full mb-6 shadow-2xl shadow-amber-500/30">
@@ -245,22 +278,30 @@ const CareerPathExplorer = () => {
             A typical journey for transitioning to this role might look like this:
           </p>
           
-          <div className="space-y-6">
-            {dummyRoadmap.map((phase, index) => (
-              <div key={index} className="relative">
-                {/* Connector Line */}
-                {index < dummyRoadmap.length - 1 && (
-                  <div className="absolute left-8 top-20 w-0.5 h-full bg-gradient-to-b from-amber-500 to-slate-700"></div>
-                )}
-                
-                <div className="flex items-start space-x-6">
-                  {/* Phase Number */}
-                  <div className="flex-shrink-0 w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full flex items-center justify-center shadow-lg shadow-amber-500/30 relative z-10">
-                    <span className="text-white font-bold text-xl">{phase.phase}</span>
+          <div className="flex gap-6">
+            {/* Timeline Column */}
+            <div className="relative flex flex-col items-center" style={{ width: '100px' }}>
+              {/* Vertical Timeline Line */}
+              <div className="absolute top-10 bottom-10 left-1/2 w-0.5 bg-gradient-to-b from-amber-500 to-slate-700" style={{ transform: 'translateX(-50%)', zIndex: 0 }}></div>
+              
+              {/* Timeline Circles */}
+              {dummyRoadmap.map((phase, index) => (
+                <div key={index} className="relative z-10 mb-12 last:mb-0" style={{ marginTop: index === 0 ? '0' : '48px' }}>
+                  <div className="w-20 h-20 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full flex items-center justify-center shadow-lg shadow-amber-500/30">
+                    <div className="text-center px-1">
+                      <div className="text-xs font-medium text-white opacity-90">Phase</div>
+                      <div className="text-2xl font-bold text-white">{index + 1}</div>
+                    </div>
                   </div>
-                  
-                  {/* Phase Content */}
-                  <div className="flex-1 bg-slate-800 rounded-xl p-6 border border-slate-700">
+                </div>
+              ))}
+            </div>
+            
+            {/* Content Column */}
+            <div className="flex-1 space-y-12">
+            {dummyRoadmap.map((phase, index) => (
+              <div key={index}>
+                  <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
                     <div className="flex items-start justify-between mb-4">
                       <div>
                         <h3 className="text-xl font-bold text-white mb-2">{phase.title}</h3>
@@ -269,7 +310,9 @@ const CareerPathExplorer = () => {
                           <span>{phase.duration}</span>
                         </div>
                       </div>
-                      <Badge variant="warning">Upcoming</Badge>
+                      <Badge variant={phase.status === 'locked' ? 'neutral' : 'warning'}>
+                        {phase.status === 'locked' ? 'Locked' : 'Upcoming'}
+                      </Badge>
                     </div>
                     
                     <div className="space-y-2">
@@ -281,10 +324,74 @@ const CareerPathExplorer = () => {
                         </div>
                       ))}
                     </div>
+                    
+                    {/* Phase 1: Show Certifications */}
+                    {phase.certifications && phase.certifications.length > 0 && (
+                      <div className="mt-6 pt-6 border-t border-slate-700">
+                        <h4 className="text-sm font-semibold text-purple-400 mb-4 flex items-center">
+                          <AcademicCapIcon className="w-4 h-4 mr-2" />
+                          Suggested Certifications ({phase.certifications.length})
+                        </h4>
+                        <div className="space-y-3 max-h-64 overflow-y-auto pr-2">
+                          {phase.certifications.slice(0, 6).map((cert, cIndex) => (
+                            <div key={cIndex} className="bg-slate-900 rounded-lg p-4 border border-purple-500/30">
+                              <div className="flex items-start justify-between mb-2">
+                                <h5 className="text-sm font-medium text-white">{cert.courseName}</h5>
+                                <Badge variant="primary" size="sm">{cert.platform}</Badge>
+                              </div>
+                              <div className="flex items-center space-x-3 text-xs text-slate-400">
+                                <span>Duration: {cert.duration}</span>
+                                <span>•</span>
+                                <span>{cert.certificationType}</span>
+                              </div>
+                              <div className="text-xs text-purple-400 mt-2">
+                                For: {cert.relatedSkill}
+                              </div>
+                            </div>
+                          ))}
+                          {phase.certifications.length > 6 && (
+                            <p className="text-xs text-slate-500 text-center">
+                              +{phase.certifications.length - 6} more certifications
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Phase 2: Show Projects */}
+                    {phase.projects && phase.projects.length > 0 && (
+                      <div className="mt-6 pt-6 border-t border-slate-700">
+                        <h4 className="text-sm font-semibold text-blue-400 mb-4">
+                          Projects to Complete ({phase.projects.length})
+                        </h4>
+                        <div className="space-y-2">
+                          {phase.projects.map((project, pIndex) => (
+                            <div key={pIndex} className="flex items-center space-x-3 text-slate-400">
+                              <div className="w-2 h-2 bg-blue-400 rounded-full flex-shrink-0"></div>
+                              <span>{project.name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Phase 3: Internship Note */}
+                    {phase.internshipSuggestions && (
+                      <div className="mt-6 pt-6 border-t border-slate-700">
+                        <div className="bg-green-500/10 rounded-lg p-4 border border-green-500/30">
+                          <h4 className="text-sm font-semibold text-green-400 mb-2">
+                            Internship Opportunities
+                          </h4>
+                          <p className="text-xs text-slate-400">
+                            Once Phase 1 & 2 are completed, you'll see personalized internship suggestions here.
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
               </div>
             ))}
+            </div>
           </div>
         </Card>
 
@@ -311,6 +418,7 @@ const CareerPathExplorer = () => {
               Start Tracking This Role
             </Button>
           </div>
+        </div>
         </div>
       </div>
     </div>

@@ -1,28 +1,65 @@
 // Base API URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
+
+// Helper function to get auth token
+const getAuthToken = () => {
+  return localStorage.getItem('token');
+};
 
 // Helper function for API calls
 async function apiCall(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
+  const token = getAuthToken();
+  
+  // Prepare headers
+  const headers = {
+    'Content-Type': 'application/json',
+    ...options.headers,
+  };
+  
+  // Add authorization header if token exists
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
   
   try {
+    console.log(`[API] ${options.method || 'GET'} ${url}`);
+    
     const response = await fetch(url, {
       ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
+      headers,
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || 'API request failed');
+    // Try to parse JSON, but handle cases where response isn't JSON
+    let data;
+    try {
+      data = await response.json();
+    } catch (parseError) {
+      // If JSON parsing fails and response is not OK, throw a generic error
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}`);
+      }
+      throw parseError;
     }
 
+    if (!response.ok) {
+      console.error(`[API Error] ${response.status}:`, data);
+      throw new Error(data.error || data.message || `API request failed with status ${response.status}`);
+    }
+
+    console.log(`[API Success] ${options.method || 'GET'} ${url}`);
     return data;
   } catch (error) {
-    console.error('API Error:', error);
+    // Enhanced error logging
+    if (error.message.includes('Failed to fetch')) {
+      console.error('[API Error] Network error - is backend running?', {
+        url,
+        baseURL: API_BASE_URL,
+        error: error.message
+      });
+      throw new Error('Cannot connect to server. Please ensure the backend is running on port 5001.');
+    }
+    console.error('[API Error]', error);
     throw error;
   }
 }
@@ -33,19 +70,47 @@ export const resumeAPI = {
   async upload(file) {
     const formData = new FormData();
     formData.append('resume', file);
+    const token = getAuthToken();
 
-    const response = await fetch(`${API_BASE_URL}/resume/upload`, {
-      method: 'POST',
-      body: formData,
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || 'Failed to upload resume');
+    const headers = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
     }
 
-    return data;
+    const url = `${API_BASE_URL}/resume/upload`;
+    console.log(`[API] POST ${url}`);
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        if (!response.ok) {
+          throw new Error(`Upload failed with status ${response.status}`);
+        }
+        throw parseError;
+      }
+
+      if (!response.ok) {
+        console.error(`[API Error] Upload failed:`, data);
+        throw new Error(data.error || data.message || 'Failed to upload resume');
+      }
+
+      console.log(`[API Success] Resume uploaded successfully`);
+      return data;
+    } catch (error) {
+      if (error.message.includes('Failed to fetch')) {
+        console.error('[API Error] Network error during upload', error);
+        throw new Error('Cannot connect to server. Please ensure the backend is running on port 5001.');
+      }
+      throw error;
+    }
   },
 
   // Get resume by ID
@@ -189,6 +254,34 @@ export const userAPI = {
       headers: {
         Authorization: `Bearer ${token}`,
       },
+    });
+  },
+
+  // Update user roadmap
+  async updateRoadmap(roadmap) {
+    return apiCall('/users/me/roadmap', {
+      method: 'PUT',
+      body: JSON.stringify({ roadmap }),
+    });
+  },
+
+  // Get notifications
+  async getNotifications() {
+    return apiCall('/users/me/notifications');
+  },
+
+  // Add notification
+  async addNotification(type, message) {
+    return apiCall('/users/me/notifications', {
+      method: 'POST',
+      body: JSON.stringify({ type, message }),
+    });
+  },
+
+  // Mark notification as read
+  async markNotificationRead(notificationId) {
+    return apiCall(`/users/me/notifications/${notificationId}/read`, {
+      method: 'PUT',
     });
   },
 };

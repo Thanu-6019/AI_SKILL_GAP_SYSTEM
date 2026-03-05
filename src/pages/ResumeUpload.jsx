@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSkillGap } from '../context';
+import { useSkillGap, useAuth } from '../context';
 import { 
   DocumentArrowUpIcon,
   CheckCircleIcon,
@@ -11,8 +11,17 @@ import { Button, Card } from '../components/ui';
 const ResumeUpload = () => {
   const navigate = useNavigate();
   const { setResumeFile } = useSkillGap();
+  const { isAuthenticated, logout } = useAuth();
   const [file, setFile] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
+
+  // Check if user is authenticated
+  useEffect(() => {
+    if (!isAuthenticated()) {
+      console.log('❌ Not authenticated, redirecting to home');
+      navigate('/');
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -56,7 +65,8 @@ const ResumeUpload = () => {
     <div className="min-h-screen bg-[#0f172a] text-slate-200">
       {/* Header */}
       <div className="bg-slate-900/50 border-b border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
+          <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
@@ -64,18 +74,31 @@ const ResumeUpload = () => {
               </div>
               <span className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">SkillBridge AI</span>
             </div>
-            <button 
-              onClick={() => navigate('/')}
-              className="text-slate-400 hover:text-white transition-colors"
-            >
-              Back to Home
-            </button>
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={() => navigate('/')}
+                className="text-slate-400 hover:text-white transition-colors"
+              >
+                Home
+              </button>
+              <button
+                onClick={() => {
+                  logout();
+                  navigate('/');
+                }}
+                className="text-red-400 hover:text-red-300 transition-colors"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-16">
+        <div className="max-w-4xl mx-auto">
         {/* Progress Steps */}
         <div className="mb-12">
           <div className="flex items-center justify-center space-x-4">
@@ -192,6 +215,7 @@ const ResumeUpload = () => {
             <h3 className="text-white font-semibold mb-2">Accurate Results</h3>
             <p className="text-slate-400 text-sm">95% accuracy in skill identification and gap analysis</p>
           </div>
+        </div>
         </div>
       </div>
     </div>

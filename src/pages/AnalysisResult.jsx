@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSkillGap } from '../context';
 import { 
@@ -8,12 +8,15 @@ import {
   BookOpenIcon,
   ArrowRightIcon,
   CheckCircleIcon,
-  SparklesIcon
+  SparklesIcon,
+  XMarkIcon,
+  ClockIcon
 } from '@heroicons/react/24/outline';
 import { Card, Badge, Button } from '../components/ui';
 
 const AnalysisResult = () => {
   const navigate = useNavigate();
+  const [selectedCourse, setSelectedCourse] = useState(null);
   const { 
     selectedRole,
     extractedSkills,
@@ -69,7 +72,8 @@ const AnalysisResult = () => {
     <div className="min-h-screen bg-[#0f172a] text-slate-200">
       {/* Header */}
       <div className="bg-slate-900/50 border-b border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
+          <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
@@ -78,11 +82,13 @@ const AnalysisResult = () => {
               <span className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">SkillBridge AI</span>
             </div>
           </div>
+          </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-12">
+        <div className="max-w-7xl mx-auto">
         {/* Progress Steps */}
         <div className="mb-12">
           <div className="flex items-center justify-center space-x-4">
@@ -180,26 +186,35 @@ const AnalysisResult = () => {
 
         {/* Missing Skills */}
         <Card title="Missing Skills" subtitle="Skills you need to develop" icon={ExclamationTriangleIcon} className="mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            {analysisData.missingSkills.map((skill, index) => (
-              <div 
-                key={index}
-                className="bg-slate-900/50 rounded-xl p-4 border-l-4 border-red-500/50 hover:border-red-500 transition-all"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h4 className="text-white font-semibold mb-2">{skill.name}</h4>
-                    <div className="flex items-center space-x-2">
-                      <Badge variant={getPriorityVariant(skill.priority)} size="sm">
-                        {skill.priority} Priority
-                      </Badge>
-                      <span className="text-sm text-slate-400">Gap: {skill.gap}%</span>
+          {analysisData.missingSkills && analysisData.missingSkills.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              {analysisData.missingSkills.map((skill, index) => (
+                <div 
+                  key={index}
+                  className="bg-slate-900/50 rounded-xl p-4 border-l-4 border-red-500/50 hover:border-red-500 transition-all"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h4 className="text-white font-semibold mb-2">{skill.name}</h4>
+                      <div className="flex items-center space-x-2">
+                        <Badge variant={getPriorityVariant(skill.priority)} size="sm">
+                          {skill.priority} Priority
+                        </Badge>
+                        <span className="text-sm text-slate-400">Gap: {skill.gap}%</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-4 p-8 bg-gradient-to-br from-green-500/10 to-blue-500/10 rounded-xl border-2 border-green-500/30 text-center">
+              <CheckCircleIcon className="w-16 h-16 text-green-400 mx-auto mb-4" />
+              <h3 className="text-2xl font-bold text-white mb-2">🎉 Perfect Match!</h3>
+              <p className="text-slate-300 text-lg mb-2">You have all the required skills for this role!</p>
+              <p className="text-slate-400">Your experience and expertise align perfectly with the job requirements.</p>
+            </div>
+          )}
         </Card>
 
         {/* Weak Skills Section */}
@@ -246,18 +261,29 @@ const AnalysisResult = () => {
         {/* Career Roadmap */}
         {careerRoadmap && careerRoadmap.length > 0 && (
           <Card title="Your Career Roadmap" subtitle="Step-by-step path to achieve your goal" icon={ArrowRightIcon} className="mb-8">
-            <div className="mt-6 relative">
-              {/* Timeline Line */}
-              <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-500 via-purple-500 to-pink-500"></div>
-              
-              <div className="space-y-8">
+            <div className="mt-6 flex gap-6">
+              {/* Timeline Column */}
+              <div className="relative flex flex-col items-center" style={{ width: '100px' }}>
+                {/* Vertical Timeline Line */}
+                <div className="absolute top-10 bottom-10 left-1/2 w-0.5 bg-gradient-to-b from-blue-500 via-purple-500 to-pink-500" style={{ transform: 'translateX(-50%)', zIndex: 0 }}></div>
+                
+                {/* Timeline Circles */}
                 {careerRoadmap.map((phase, index) => (
-                  <div key={index} className="relative pl-20">
-                    {/* Phase Number */}
-                    <div className="absolute left-0 w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-blue-500/30">
-                      {phase.phase}
+                  <div key={index} className="relative z-10 mb-12 last:mb-0" style={{ marginTop: index === 0 ? '0' : '48px' }}>
+                    <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/30">
+                      <div className="text-center px-1">
+                        <div className="text-xs font-medium opacity-90">Phase</div>
+                        <div className="text-2xl font-bold">{index + 1}</div>
+                      </div>
                     </div>
-                    
+                  </div>
+                ))}
+              </div>
+              
+              {/* Content Column */}
+              <div className="flex-1 space-y-12">
+                {careerRoadmap.map((phase, index) => (
+                  <div key={index}>
                     <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-700 hover:border-blue-500/50 transition-all">
                       <div className="flex items-start justify-between mb-3">
                         <div>
@@ -305,7 +331,8 @@ const AnalysisResult = () => {
               {recommendedCourses.map((course, index) => (
                 <div 
                   key={index}
-                  className="bg-slate-900/50 rounded-xl p-6 border border-slate-700 hover:border-blue-500/50 transition-all hover:scale-[1.02] group"
+                  onClick={() => setSelectedCourse(course)}
+                  className="bg-slate-900/50 rounded-xl p-6 border border-slate-700 hover:border-blue-500/50 transition-all hover:scale-[1.02] group cursor-pointer"
                 >
                   <div className="flex items-start justify-between mb-3">
                     <h4 className="text-lg font-semibold text-white group-hover:text-blue-400 transition-colors flex-1">
@@ -325,6 +352,9 @@ const AnalysisResult = () => {
                       ))}
                     </div>
                   )}
+                  <div className="mt-4 text-sm text-blue-400 font-medium flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    Click to view details <ArrowRightIcon className="w-4 h-4 ml-1" />
+                  </div>
                 </div>
               ))}
             </div>
@@ -338,14 +368,104 @@ const AnalysisResult = () => {
             Access your personalized dashboard to track progress, explore courses, and achieve your career goals.
           </p>
           <Button 
-            onClick={() => navigate('/dashboard')}
+            onClick={() => {
+              console.log('🔘 [AnalysisResult] Button clicked: Go to Dashboard');
+              console.log('📊 [AnalysisResult] Current state before navigation:', {
+                selectedRole: selectedRole?.title,
+                overallScore: skillGapData?.overallScore,
+                missingSkills: skillGapData?.missingSkills?.length,
+                careerRoadmap: careerRoadmap?.length,
+              });
+              navigate('/dashboard');
+              console.log('✅ [AnalysisResult] navigate("/dashboard") executed');
+            }}
             icon={ArrowRightIcon}
             className="bg-white text-blue-600 hover:bg-slate-100 shadow-xl"
           >
             Go to Dashboard
           </Button>
         </div>
+        </div>
       </div>
+
+      {/* Course Details Modal */}
+      {selectedCourse && (
+        <div 
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => setSelectedCourse(null)}
+        >
+          <div 
+            className="bg-slate-900 rounded-2xl max-w-2xl w-full p-8 border border-slate-700 shadow-2xl transform transition-all"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between mb-6">
+              <div className="flex-1">
+                <h3 className="text-3xl font-bold text-white mb-2">{selectedCourse.title}</h3>
+                <p className="text-blue-400 font-medium text-lg">{selectedCourse.provider}</p>
+              </div>
+              <button
+                onClick={() => setSelectedCourse(null)}
+                className="text-slate-400 hover:text-white transition-colors p-2 hover:bg-slate-800 rounded-lg"
+              >
+                <XMarkIcon className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <ClockIcon className="w-5 h-5 text-slate-400" />
+                  <span className="text-slate-300">{selectedCourse.duration}</span>
+                </div>
+                {selectedCourse.level && (
+                  <Badge variant="primary">{selectedCourse.level}</Badge>
+                )}
+                {selectedCourse.relevance && (
+                  <Badge variant="success">{selectedCourse.relevance}% Match</Badge>
+                )}
+              </div>
+
+              {selectedCourse.description && (
+                <div>
+                  <h4 className="text-white font-semibold mb-2">Description</h4>
+                  <p className="text-slate-400">{selectedCourse.description}</p>
+                </div>
+              )}
+
+              {selectedCourse.skills && selectedCourse.skills.length > 0 && (
+                <div>
+                  <h4 className="text-white font-semibold mb-3">Skills You'll Learn</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedCourse.skills.map((skill, idx) => (
+                      <Badge key={idx} variant="primary" size="md">{skill}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                onClick={() => {
+                  if (selectedCourse.url) {
+                    window.open(selectedCourse.url, '_blank', 'noopener,noreferrer');
+                  }
+                }}
+                icon={ArrowRightIcon}
+                className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              >
+                {selectedCourse.url ? 'Start Course' : 'Register Interest'}
+              </Button>
+              <Button
+                onClick={() => setSelectedCourse(null)}
+                className="bg-slate-800 hover:bg-slate-700 text-white"
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

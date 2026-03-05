@@ -63,13 +63,27 @@ const skillGapAnalysisSchema = new mongoose.Schema({
     skills: [String],
     level: String,
   }],
-  careerRoadmap: [{
-    phase: String,
-    duration: String,
-    skills: [String],
-    milestone: String,
-    resources: [String],
-  }],
+  careerRoadmap: {
+    phases: [{
+      phaseNumber: Number,
+      title: String,
+      duration: String,
+      locked: { type: Boolean, default: true },
+      completed: { type: Boolean, default: false },
+      skills: [{
+        name: String,
+        completed: { type: Boolean, default: false },
+        approved: { type: Boolean, default: false },
+        certificateUrl: { type: String, default: null },
+        platform: { type: String, default: null },
+      }],
+      resources: [{
+        courseName: String,
+        platform: String,
+        link: String,
+      }],
+    }],
+  },
   aiConfidence: {
     type: Number,
     min: 0,

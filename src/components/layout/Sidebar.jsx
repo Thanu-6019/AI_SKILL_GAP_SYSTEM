@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
   HomeIcon, 
@@ -5,13 +6,15 @@ import {
   ChartBarIcon, 
   Cog6ToothIcon,
   XMarkIcon,
-  Bars3Icon
+  Bars3Icon,
+  EnvelopeIcon,
+  PhoneIcon
 } from '@heroicons/react/24/outline';
 
 const Sidebar = ({ isOpen, onClose }) => {
+  const [showSupportModal, setShowSupportModal] = useState(false);
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: HomeIcon },
-    { name: 'Skills', path: '/dashboard/skills', icon: AcademicCapIcon },
     { name: 'Reports', path: '/dashboard/reports', icon: ChartBarIcon },
     { name: 'Settings', path: '/dashboard/settings', icon: Cog6ToothIcon },
   ];
@@ -85,12 +88,63 @@ const Sidebar = ({ isOpen, onClose }) => {
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-700/50 bg-gradient-to-t from-slate-900/50 to-transparent">
           <div className="bg-slate-900/60 backdrop-blur-sm rounded-2xl p-4 border border-slate-700/30">
             <p className="text-sm text-slate-400 mb-3">💡 Need help?</p>
-            <button className="w-full px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-xl text-sm font-medium transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/30">
+            <button 
+              onClick={() => setShowSupportModal(true)}
+              className="w-full px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-xl text-sm font-medium transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/30"
+            >
               Contact Support
             </button>
           </div>
         </div>
       </aside>
+
+      {/* Contact Support Modal */}
+      {showSupportModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4" onClick={() => setShowSupportModal(false)}>
+          <div className="bg-slate-900 rounded-2xl max-w-md w-full p-6 border border-slate-700 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-white">Contact Support</h3>
+              <button onClick={() => setShowSupportModal(false)}>
+                <XMarkIcon className="w-6 h-6 text-slate-400 hover:text-white" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="p-4 bg-slate-800 rounded-xl">
+                <div className="flex items-center space-x-3 mb-2">
+                  <EnvelopeIcon className="w-5 h-5 text-blue-400" />
+                  <p className="text-slate-300 font-medium">Email</p>
+                </div>
+                <a href="mailto:support@skillbridge.ai" className="text-blue-400 hover:text-blue-300">
+                  support@skillbridge.ai
+                </a>
+              </div>
+              
+              <div className="p-4 bg-slate-800 rounded-xl">
+                <div className="flex items-center space-x-3 mb-2">
+                  <PhoneIcon className="w-5 h-5 text-green-400" />
+                  <p className="text-slate-300 font-medium">Helpline</p>
+                </div>
+                <a href="tel:+1-800-SKILL-AI" className="text-green-400 hover:text-green-300">
+                  +1 (800) SKILL-AI
+                </a>
+              </div>
+              
+              <div className="p-4 bg-blue-500/10 rounded-xl border border-blue-500/20">
+                <p className="text-sm text-slate-400 mb-1">Response Time</p>
+                <p className="text-white font-semibold">Within 24 hours</p>
+              </div>
+              
+              <button
+                onClick={() => setShowSupportModal(false)}
+                className="w-full px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

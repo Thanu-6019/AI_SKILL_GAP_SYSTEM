@@ -1,4 +1,5 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 import { DashboardLayout } from '../components/layout';
 import { ProtectedRoute } from '../components/common';
 import Landing from '../pages/Landing';
@@ -8,16 +9,33 @@ import RoleSelection from '../pages/RoleSelection';
 import AnalysisResult from '../pages/AnalysisResult';
 import CareerPathExplorer from '../pages/CareerPathExplorer';
 import Dashboard from '../pages/Dashboard';
-import Skills from '../pages/Skills';
 import Reports from '../pages/Reports';
 import Settings from '../pages/Settings';
+import { Login } from '../pages/auth';
 
 const AppRoutes = () => {
+  const location = useLocation();
+  
+  // Log every route change
+  useEffect(() => {
+    console.log('🛤️ [AppRoutes] Route changed to:', location.pathname);
+  }, [location]);
+
   return (
     <Routes>
-      {/* Public routes without sidebar */}
+      {/* Public routes */}
       <Route path="/" element={<Landing />} />
-      <Route path="/upload" element={<ResumeUpload />} />
+      <Route path="/auth" element={<Login />} />
+      
+      {/* Protected upload route */}
+      <Route 
+        path="/upload" 
+        element={
+          <ProtectedRoute>
+            <ResumeUpload />
+          </ProtectedRoute>
+        } 
+      />
       
       {/* Protected AI flow routes */}
       <Route 
@@ -46,12 +64,25 @@ const AppRoutes = () => {
       />
       
       {/* Career Path Explorer - Dynamic route with role name */}
-      <Route path="/career-path/:roleName" element={<CareerPathExplorer />} />
+      <Route 
+        path="/career-path/:roleName" 
+        element={
+          <ProtectedRoute>
+            <CareerPathExplorer />
+          </ProtectedRoute>
+        } 
+      />
 
       {/* Protected routes with sidebar layout */}
-      <Route path="/dashboard" element={<DashboardLayout />}>
+      <Route 
+        path="/dashboard" 
+        element={
+          <ProtectedRoute>
+            <DashboardLayout />
+          </ProtectedRoute>
+        }
+      >
         <Route index element={<Dashboard />} />
-        <Route path="skills" element={<Skills />} />
         <Route path="reports" element={<Reports />} />
         <Route path="settings" element={<Settings />} />
       </Route>

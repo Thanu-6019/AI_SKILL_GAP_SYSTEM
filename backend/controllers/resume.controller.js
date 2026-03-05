@@ -4,8 +4,10 @@ import fs from 'fs/promises';
 
 // @desc    Upload and process resume
 // @route   POST /api/resume/upload
-// @access  Public (can add auth later)
+// @access  Protected
 export const uploadResume = async (req, res, next) => {
+  let uploadedFilePath = null;
+  
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -14,14 +16,25 @@ export const uploadResume = async (req, res, next) => {
       });
     }
 
+    uploadedFilePath = req.file.path;
     console.log('📄 Processing resume:', req.file.filename);
 
     // Extract text from PDF
-    const pdfData = await pdfService.extractTextFromPDF(req.file.path);
+    let pdfData;
+    try {
+      pdfData = await pdfService.extractTextFromPDF(req.file.path);
+    } catch (pdfError) {
+      console.error('PDF extraction error:', pdfError);
+      await fs.unlink(uploadedFilePath);
+      return res.status(400).json({
+        success: false,
+        error: 'Failed to read PDF file. Please ensure the file is a valid PDF and try again.',
+      });
+    }
     
     if (!pdfData.text || pdfData.text.trim().length < 100) {
       // Clean up the file
-      await fs.unlink(req.file.path);
+      await fs.unlink(uploadedFilePath);
       return res.status(400).json({
         success: false,
         error: 'Resume appears to be empty or contains insufficient text',
@@ -32,10 +45,33 @@ export const uploadResume = async (req, res, next) => {
 
     // Use AI to extract skills and personal info
     console.log('🤖 Extracting skills using AI...');
-    const aiAnalysis = await aiService.extractSkillsFromText(pdfData.text);
+    let aiAnalysis;
+    try {
+      aiAnalysis = await aiService.extractSkillsFromText(pdfData.text);
+    } catch (aiError) {
+      console.error('AI processing error:', aiError);
+      await fs.unlink(uploadedFilePath);
+      
+      // Return specific status code for rate limiting
+      const errorMsg = aiError.message || '';
+      if (errorMsg.toLowerCase().includes('rate limit') || errorMsg.toLowerCase().includes('too many requests')) {
+        return res.status(429).json({
+          success: false,
+          error: 'AI service rate limit reached. Please wait 60 seconds before trying again.',
+          retryAfter: 60, // seconds
+        });
+      }
+      
+      // Return user-friendly error message
+      return res.status(500).json({
+        success: false,
+        error: aiError.message || 'AI processing failed. Please try again later.',
+      });
+    }
 
     // Create resume record
     const resume = await Resume.create({
+      userId: req.user?._id, // Link to authenticated user if available
       fileName: req.file.originalname,
       filePath: req.file.path,
       fileSize: req.file.size,
@@ -64,15 +100,19 @@ export const uploadResume = async (req, res, next) => {
     console.error('Resume upload error:', error);
     
     // Clean up file if it was uploaded
-    if (req.file) {
+    if (uploadedFilePath) {
       try {
-        await fs.unlink(req.file.path);
+        await fs.unlink(uploadedFilePath);
       } catch (unlinkError) {
         console.error('Error deleting file:', unlinkError);
       }
     }
     
-    next(error);
+    // Send user-friendly error response instead of crashing
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'An error occurred while processing your resume. Please try again.',
+    });
   }
 };
 

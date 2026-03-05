@@ -1,8 +1,10 @@
+import process from 'node:process';
+
 export default {
   // Google Gemini AI Configuration
   gemini: {
-    apiKey: process.env.GEMINI_API_KEY,
-    model: 'gemini-3-flash-preview',
+    apiKey: 'AIzaSyB18zhhaNk2oBdqd4x8aEZJzV6Hd00nVus',
+    model: 'gemini-1.5-flash',
     maxTokens: 2000,
     temperature: 0.7,
   },

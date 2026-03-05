@@ -12,8 +12,25 @@ const __dirname = path.dirname(__filename);
 // Force load .env from backend folder
 dotenv.config({ path: path.join(__dirname, '.env') });
 
-// Debug check (remove later if you want)
-console.log("GEMINI API KEY LOADED:", process.env.GEMINI_API_KEY ? "YES" : "NO");
+// ======================
+// VALIDATE REQUIRED ENVIRONMENT VARIABLES
+// ======================
+const requiredEnvVars = ['MONGO_URI', 'JWT_SECRET', 'GROQ_API_KEY'];
+const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+
+if (missingEnvVars.length > 0) {
+  console.warn('⚠️  WARNING: Missing environment variables:');
+  missingEnvVars.forEach(varName => {
+    console.warn(`   - ${varName}`);
+  });
+  console.warn('\nAI features will not work until these are set in backend/.env');
+  // Do NOT exit — server still starts, but AI calls will throw helpful errors
+}
+
+console.log('✅ All required environment variables are set');
+console.log('   - MongoDB URI:', process.env.MONGO_URI ? 'Configured' : 'Missing');
+console.log('   - JWT Secret:', process.env.JWT_SECRET ? 'Configured' : 'Missing');
+console.log('   - Groq API Key:', process.env.GROQ_API_KEY ? 'Configured ✅' : 'Missing ⚠️  (AI features disabled)');
 
 // ======================
 // IMPORTS
@@ -37,7 +54,7 @@ import userRoutes from './routes/user.routes.js';
 // INITIALIZE APP
 // ======================
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // ======================
 // CONNECT DATABASE
@@ -51,9 +68,33 @@ app.use(helmet());
 app.use(compression());
 app.use(morgan('dev'));
 
+// CORS Configuration - Allow localhost:5173 (frontend) and other localhost ports
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    // Explicitly allow localhost:5173 (Vite default)
+    if (origin === 'http://localhost:5173' || origin === 'http://127.0.0.1:5173') {
+      return callback(null, true);
+    }
+
+    // Allow all localhost and 127.0.0.1 ports
+    if (origin && (origin.match(/^http:\/\/(localhost|127\.0\.0\.1):\d+$/) || origin === process.env.FRONTEND_URL)) {
+      return callback(null, true);
+    }
+
+    // For production, allow configured FRONTEND_URL
+    if (process.env.FRONTEND_URL && origin === process.env.FRONTEND_URL) {
+      return callback(null, true);
+    }
+
+    // Reject others
+    callback(null, false);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(express.json());
@@ -104,8 +145,17 @@ app.listen(PORT, () => {
   console.log(`🔗 Frontend URL: ${process.env.FRONTEND_URL}`);
 });
 
-// Handle unhandled promise rejections
-process.on('unhandledRejection', (err) => {
-  console.error('Unhandled Rejection:', err);
-  process.exit(1);
+// Handle unhandled promise rejections - log but don't exit
+process.on('unhandledRejection', (err, promise) => {
+  console.error('❌ Unhandled Rejection:', err);
+  console.error('Promise:', promise);
+  // Don't exit - keep server running
+  // Log the error and continue serving requests
+});
+
+// Handle uncaught exceptions - log but don't exit
+process.on('uncaughtException', (err) => {
+  console.error('❌ Uncaught Exception:', err);
+  // Don't exit - keep server running
+  // Log the error and continue serving requests
 });

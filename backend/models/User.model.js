@@ -37,6 +37,46 @@ const userSchema = new mongoose.Schema({
   careerGoals: {
     type: String,
   },
+  jobTitle: {
+    type: String,
+    default: null,
+  },
+  department: {
+    type: String,
+    default: null,
+  },
+  resumeSkills: [{
+    name: String,
+    level: Number,
+    category: String,
+  }],
+  roadmap: {
+    phases: [{
+      phaseNumber: Number,
+      title: String,
+      duration: String,
+      locked: { type: Boolean, default: true },
+      completed: { type: Boolean, default: false },
+      skills: [{
+        name: String,
+        completed: { type: Boolean, default: false },
+        approved: { type: Boolean, default: false },
+        certificateUrl: { type: String, default: null },
+        platform: { type: String, default: null },
+      }],
+      resources: [{
+        courseName: String,
+        platform: String,
+        link: String,
+      }],
+    }],
+  },
+  notifications: [{
+    type: String,
+    message: String,
+    read: { type: Boolean, default: false },
+    createdAt: { type: Date, default: Date.now },
+  }],
   completedCourses: [{
     courseId: String,
     courseName: String,

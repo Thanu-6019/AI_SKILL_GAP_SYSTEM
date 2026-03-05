@@ -29,7 +29,27 @@ export const matchRoles = async (req, res, next) => {
     console.log('🎯 Matching roles for skills...');
     
     // Use AI to match roles
-    const matchedRoles = await aiService.matchRolesForSkills(resume.extractedSkills, topN);
+    let matchedRoles;
+    try {
+      matchedRoles = await aiService.matchRolesForSkills(resume.extractedSkills, topN);
+    } catch (aiError) {
+      console.error('AI role matching error:', aiError);
+      
+      // Return specific status code for rate limiting
+      const errorMsg = aiError.message || '';
+      if (errorMsg.toLowerCase().includes('rate limit') || errorMsg.toLowerCase().includes('too many requests')) {
+        return res.status(429).json({
+          success: false,
+          error: 'AI service rate limit reached. Please wait 60 seconds before trying again.',
+          retryAfter: 60,
+        });
+      }
+      
+      return res.status(500).json({
+        success: false,
+        error: aiError.message || 'Failed to match roles. Please try again later.',
+      });
+    }
 
     res.status(200).json({
       success: true,
@@ -74,10 +94,30 @@ export const analyzeGap = async (req, res, next) => {
     console.log('✅ Required skills:', targetRole.requiredSkills);
     
     // Use AI to analyze skill gap
-    const gapAnalysis = await aiService.analyzeSkillGap(
-      resume.extractedSkills,
-      targetRole
-    );
+    let gapAnalysis;
+    try {
+      gapAnalysis = await aiService.analyzeSkillGap(
+        resume.extractedSkills,
+        targetRole
+      );
+    } catch (aiError) {
+      console.error('AI gap analysis error:', aiError);
+      
+      // Return specific status code for rate limiting
+      const errorMsg = aiError.message || '';
+      if (errorMsg.toLowerCase().includes('rate limit') || errorMsg.toLowerCase().includes('too many requests')) {
+        return res.status(429).json({
+          success: false,
+          error: 'AI service rate limit reached. Please wait 60 seconds before trying again.',
+          retryAfter: 60,
+        });
+      }
+      
+      return res.status(500).json({
+        success: false,
+        error: aiError.message || 'Failed to analyze skill gap. Please try again later.',
+      });
+    }
 
     console.log('✅ Gap analysis result:', {
       overallScore: gapAnalysis.overallScore,
@@ -87,11 +127,25 @@ export const analyzeGap = async (req, res, next) => {
     });
 
     // Generate career advice
-    const advice = await aiService.generateCareerAdvice({
-      overallScore: gapAnalysis.overallScore,
-      missingSkills: gapAnalysis.missingSkills,
-      targetRole: targetRole,
-    });
+    let advice;
+    try {
+      advice = await aiService.generateCareerAdvice({
+        overallScore: gapAnalysis.overallScore,
+        missingSkills: gapAnalysis.missingSkills,
+        targetRole: targetRole,
+      });
+    } catch (adviceError) {
+      console.error('AI career advice error:', adviceError);
+      // Use fallback advice if AI fails
+      advice = {
+        summary: 'Career advice generation is temporarily unavailable.',
+        strengths: [],
+        weaknesses: [],
+        nextSteps: ['Review the skill gap analysis', 'Focus on missing skills'],
+        careerTips: ['Take online courses', 'Build practical projects'],
+        estimatedTimeToReady: 'Variable',
+      };
+    }
 
     // Save analysis to database
     const analysis = await SkillGapAnalysis.create({

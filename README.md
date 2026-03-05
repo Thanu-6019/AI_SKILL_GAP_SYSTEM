@@ -10,7 +10,7 @@
 
 **An intelligent career development platform that analyzes your resume, identifies skill gaps, and provides personalized learning recommendations using AI.**
 
-[📖 Documentation](#features) • [🚀 Quick Start](#quick-start) • [🛠️ Setup Guide](SETUP_GUIDE.md)
+📖 **[Complete Documentation →](PROJECT_DOCUMENTATION.md)** • 🚀 [Quick Start](#-quick-start) • 🛠️ [Setup](#-installation)
 
 </div>
 
@@ -123,7 +123,21 @@ npm run dev
 http://localhost:5173
 ```
 
-📖 **For detailed setup instructions, see [SETUP_GUIDE.md](SETUP_GUIDE.md)**
+---
+
+## 📚 Complete Documentation
+
+For detailed information including:
+- Full installation guide
+- Application flow diagrams
+- User journeys
+- API reference
+- Troubleshooting guide
+- Deployment instructions
+
+**👉 See [PROJECT_DOCUMENTATION.md](PROJECT_DOCUMENTATION.md)**
+
+---
 
 ## 📁 Project Structure
 
@@ -201,7 +215,7 @@ VITE_API_URL=http://localhost:5000/api
 - Check file size (max 5MB)
 - Ensure `backend/uploads/` folder exists
 
-See [SETUP_GUIDE.md](SETUP_GUIDE.md) for more troubleshooting tips.
+**For comprehensive troubleshooting, see [PROJECT_DOCUMENTATION.md](PROJECT_DOCUMENTATION.md#troubleshooting)**
 
 ## 🔒 Security
 
