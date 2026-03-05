@@ -68,29 +68,38 @@ app.use(helmet());
 app.use(compression());
 app.use(morgan('dev'));
 
-// CORS Configuration - Allow localhost:5173 (frontend) and other localhost ports
+// CORS Configuration - Allow frontend from various sources
 app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
 
-    // Explicitly allow localhost:5173 (Vite default)
-    if (origin === 'http://localhost:5173' || origin === 'http://127.0.0.1:5173') {
+    // Allowed origins list
+    const allowedOrigins = [
+      'http://localhost:5173',
+      'http://127.0.0.1:5173',
+      'https://aiskillgapsystem.vercel.app',        // Vercel deployment
+      'https://ai-skill-gap-system.onrender.com',   // Render frontend (if used)
+      process.env.FRONTEND_URL                       // Environment variable override
+    ].filter(Boolean); // Remove undefined values
+
+    // Allow all localhost/127.0.0.1 ports for development
+    if (origin && origin.match(/^http:\/\/(localhost|127\.0\.0\.1):\d+$/)) {
       return callback(null, true);
     }
 
-    // Allow all localhost and 127.0.0.1 ports
-    if (origin && (origin.match(/^http:\/\/(localhost|127\.0\.0\.1):\d+$/) || origin === process.env.FRONTEND_URL)) {
+    // Check if origin is in allowed list
+    if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
 
-    // For production, allow configured FRONTEND_URL
-    if (process.env.FRONTEND_URL && origin === process.env.FRONTEND_URL) {
-      return callback(null, true);
+    // Log rejected origins in development
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn(`⚠️  CORS blocked origin: ${origin}`);
     }
 
     // Reject others
-    callback(null, false);
+    callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
