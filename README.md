@@ -12,7 +12,7 @@
 
 ### 🚀 **Live Demo**
 
-**Frontend**: [https://aiskillgapsystem-git-main-divyanjalis-projects.vercel.app](https://aiskillgapsystem-git-main-divyanjalis-projects.vercel.app)
+**Frontend**: [https://ai-skill-gap-system.vercel.app](https://ai-skill-gap-system.vercel.app)
 
 **Backend API**: [https://ai-skill-gap-system-2.onrender.com](https://ai-skill-gap-system-2.onrender.com)
 
