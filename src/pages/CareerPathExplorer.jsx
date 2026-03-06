@@ -27,25 +27,67 @@ const CareerPathExplorer = () => {
     }
   }, [exploreRole, navigate]);
 
-  const handleStartTracking = () => {
+  const handleStartTracking = async () => {
     console.log('📌 Starting to track role:', exploreRole.title);
-    // Save explore role to context
-    setSelectedRole(exploreRole);
     
-    // Save dummy roadmap to context for dashboard display
-    setCareerRoadmap(dummyRoadmap);
-    
-    // Save dummy skill gap data
-    setSkillGapData({
-      overallScore: exploreRole.matchScore,
-      missingSkills: dummyMissingSkills,
-      weakSkills: [],
-      strongSkills: [],
-      aiConfidence: 85,
-    });
-    
-    console.log('✅ Role saved, navigating to dashboard');
-    navigate('/dashboard');
+    try {
+      // Get the auth token
+      const token = localStorage.getItem('token');
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
+      
+      // Save the new role and roadmap to context FIRST
+      setSelectedRole(exploreRole);
+      setCareerRoadmap(dummyRoadmap);
+      setSkillGapData({
+        overallScore: exploreRole.matchScore,
+        missingSkills: dummyMissingSkills,
+        weakSkills: [],
+        strongSkills: [],
+        aiConfidence: 85,
+      });
+      
+      console.log('✅ Role saved to context');
+      
+      if (token) {
+        // Save the new role and roadmap to backend
+        console.log('💾 Saving new role to backend:', exploreRole.title);
+        
+        const updatePayload = {
+          jobTitle: exploreRole.title,
+          roadmap: {
+            selectedRole: exploreRole,
+            phases: dummyRoadmap
+          }
+        };
+        
+        try {
+          const response = await fetch(`${API_BASE_URL}/users/me`, {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(updatePayload),
+          });
+          
+          if (response.ok) {
+            console.log('✅ Successfully saved new role to backend');
+          } else {
+            console.error('❌ Failed to save role to backend:', response.statusText);
+          }
+        } catch (fetchError) {
+          console.error('❌ Error saving to backend:', fetchError);
+        }
+      }
+      
+      console.log('✅ Navigating to dashboard with new role');
+      // Navigate to dashboard - add a query param to force refresh
+      navigate('/dashboard?roleChanged=true');
+    } catch (error) {
+      console.error('❌ Error in handleStartTracking:', error);
+      // Still navigate even if there's an error
+      navigate('/dashboard?roleChanged=true');
+    }
   };
 
   if (!exploreRole) {

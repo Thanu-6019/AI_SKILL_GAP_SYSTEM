@@ -21,16 +21,26 @@ const ProtectedRoute = ({
       // Only check if we're accessing dashboard route specifically
       const isDashboardRoute = location.pathname.startsWith('/dashboard');
       
+      // CRITICAL FIX: Don't run this check if we already have other requirements (resumeFile, roles, etc)
+      // Those are for NEW USER FLOW. This check is ONLY for existing users going directly to dashboard
       if (isDashboardRoute && !requireResume && !requireRoles && !requireRole && isAuthenticated()) {
         setCheckingAnalysis(true);
-        const hasAnalysis = await hasExistingAnalysis();
-        console.log('🔍 [ProtectedRoute] Dashboard access check - Has analysis:', hasAnalysis);
         
-        // If no existing analysis, redirect new users to upload
-        if (!hasAnalysis) {
-          console.log('⚠️ [ProtectedRoute] New user detected, will redirect to /upload');
-          setShouldRedirectToUpload(true);
+        try {
+          const hasAnalysis = await hasExistingAnalysis();
+          console.log('🔍 [ProtectedRoute] Dashboard access check - Has analysis:', hasAnalysis);
+          
+          // FIXED: If no existing analysis, redirect new users to upload
+          if (!hasAnalysis) {
+            console.log('⚠️ [ProtectedRoute] New user detected, will redirect to /upload');
+            setShouldRedirectToUpload(true);
+          }
+        } catch (error) {
+          console.error('❌ [ProtectedRoute] Error checking analysis:', error);
+          // CRITICAL FIX: On error, don't redirect - let user through to dashboard
+          // Dashboard itself will handle the no-data state
         }
+        
         setCheckingAnalysis(false);
       }
     };

@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useNavigate, Navigate } from 'react-router-dom';
+import { useNavigate, Navigate, useSearchParams } from 'react-router-dom';
 import { 
   CheckCircleIcon,
   LockClosedIcon,
@@ -15,13 +15,17 @@ import { Card, Badge, Button, LoadingSpinner } from '../components/ui';
 import { useSkillGap } from '../context';
 import { 
   getUserDataField,
-  setUserData,
-  getRoadmapProgress 
+  setUserData
 } from '../utils';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { selectedRole, careerRoadmap, extractedSkills, skillGapData, setSelectedRole, setCareerRoadmap } = useSkillGap();
+  const [searchParams] = useSearchParams();
+  const roleChanged = searchParams.get('roleChanged') === 'true';
+  const { selectedRole, careerRoadmap, extractedSkills, setSelectedRole, setCareerRoadmap, setExtractedSkills } = useSkillGap();
+  
+  // API Base URL - declared once for entire component
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
   
   const [selectedPhase, setSelectedPhase] = useState(null);
   const [selectedSkillIndex, setSelectedSkillIndex] = useState(null);
@@ -35,7 +39,6 @@ const Dashboard = () => {
 
   // Loading and analysis completion state
   const [isLoading, setIsLoading] = useState(true);
-  const [analysisCompleted, setAnalysisCompleted] = useState(false);
   const [userLastLogin, setUserLastLogin] = useState(null);
   const [isExistingUser, setIsExistingUser] = useState(false);
 
@@ -100,11 +103,10 @@ const Dashboard = () => {
         if (!token) {
           console.warn('⚠️ [Dashboard] No auth token found');
           setIsLoading(false);
-          setAnalysisCompleted(false);
           return;
         }
 
-        const response = await fetch('http://localhost:5001/api/users/me', {
+        const response = await fetch(`${API_BASE_URL}/users/me`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
@@ -270,6 +272,15 @@ const Dashboard = () => {
               setCareerRoadmap(transformedRoadmap);
             }
 
+            // FIXED: Load resumeSkills from backend to ensure radar chart shows correct skills
+            // ExtractedSkills should be the user's RESUME skills, not roadmap skills
+            if (user.resumeSkills && user.resumeSkills.length > 0) {
+              setExtractedSkills(user.resumeSkills);
+              console.log('✅ Set extracted skills from backend resume:', user.resumeSkills.length);
+            } else if (!extractedSkills || extractedSkills.length === 0) {
+              console.warn('⚠️ [Dashboard] No resumeSkills in backend, using context data');
+            }
+
             // Set selected role from jobTitle
             if (user.jobTitle) {
               setSelectedRole({
@@ -278,26 +289,19 @@ const Dashboard = () => {
               });
               console.log('✅ Set selected role:', user.jobTitle);
             }
-
-            setAnalysisCompleted(true);
           }
           // NEW USER or USER WITH CONTEXT DATA: Check context
           else if (hasContextAnalysis) {
             console.log('🆕 NEW USER - Using context data from current session');
-            setAnalysisCompleted(true);
           }
           // NO ANALYSIS: Redirect to upload
           else {
             console.warn('❌ NEW USER - No analysis found');
-            setAnalysisCompleted(false);
           }
         } else {
           // Check if user has context data (new user flow)
           if (selectedRole && careerRoadmap && careerRoadmap.length > 0) {
             console.log('✅ [Dashboard] Using context data from current session');
-            setAnalysisCompleted(true);
-          } else {
-            setAnalysisCompleted(false);
           }
         }
       } catch (error) {
@@ -305,17 +309,46 @@ const Dashboard = () => {
         // Still check context data as fallback
         if (selectedRole && careerRoadmap && careerRoadmap.length > 0) {
           console.log('✅ [Dashboard] Using context data as fallback');
-          setAnalysisCompleted(true);
-        } else {
-          setAnalysisCompleted(false);
         }
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadUserDataFromBackend();
-  }, []); // Empty dependency array - only run once on mount
+    // If role was just changed, skip backend load and use context data
+    if (roleChanged) {
+      console.log('🔄 [Dashboard] Role changed - using context data directly');
+      console.log('📊 [Dashboard] Context state after role change:');
+      console.log('  - selectedRole:', selectedRole?.title);
+      console.log('  - extractedSkills:', extractedSkills?.length, 'skills');
+      console.log('  - careerRoadmap:', careerRoadmap?.length, 'phases');
+      
+      if (careerRoadmap && careerRoadmap.length > 0) {
+        console.log('  - Phase 1:', careerRoadmap[0]?.title || careerRoadmap[0]?.phase);
+        console.log('  - Phase 1 skills:', careerRoadmap[0]?.skills?.length);
+        console.log('  - Phase 1 resources:', careerRoadmap[0]?.resources?.length);
+        console.log('  - Full Phase 1 data:', JSON.stringify(careerRoadmap[0], null, 2));
+      }
+      
+      // Verify we have valid data
+      if (!selectedRole || !careerRoadmap || careerRoadmap.length === 0) {
+        console.error('❌ [Dashboard] Role changed but context data is missing!');
+        console.log('   Redirecting to role selection...');
+        navigate('/role-selection', { replace: true });
+      } else {
+        console.log('✅ [Dashboard] Using fresh context data from role change');
+        setIsLoading(false);
+        
+        // Clear the roleChanged param after component has rendered
+        setTimeout(() => {
+          navigate('/dashboard', { replace: true });
+        }, 100);
+      }
+    } else {
+      loadUserDataFromBackend();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roleChanged]); // Depend on roleChanged to re-run when it changes
 
   // Show loading spinner while checking user status
   if (isLoading) {
@@ -360,7 +393,7 @@ const Dashboard = () => {
         formData.append('skillIndex', selectedSkillIndex);
         formData.append('platform', certificatePlatform);
         
-        const response = await fetch('http://localhost:5001/api/users/me/certificate', {
+        const response = await fetch(`${API_BASE_URL}/users/me/certificate`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -374,7 +407,8 @@ const Dashboard = () => {
         }
         
         const data = await response.json();
-        finalCertificateUrl = `http://localhost:5001${data.data.certificateUrl}`;
+        const baseUrl = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:5001';
+        finalCertificateUrl = `${baseUrl}${data.data.certificateUrl}`;
         console.log('✅ Certificate file uploaded:', finalCertificateUrl);
       } catch (error) {
         console.error('❌ Certificate upload failed:', error);
@@ -451,7 +485,8 @@ const Dashboard = () => {
           }),
         };
 
-        await fetch('http://localhost:5001/api/users/me', {
+        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
+        await fetch(`${API_BASE_URL}/users/me`, {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -486,7 +521,7 @@ const Dashboard = () => {
         setCareerRoadmap(updatedCareerRoadmap);
 
         // ADD NOTIFICATION TO BACKEND
-        await fetch('http://localhost:5001/api/users/me/notifications', {
+        await fetch(`${API_BASE_URL}/users/me/notifications`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -501,7 +536,7 @@ const Dashboard = () => {
 
         // If all skills approved, show phase complete notification
         if (allSkillsWillBeApproved) {
-          await fetch('http://localhost:5001/api/users/me/notifications', {
+          await fetch(`${API_BASE_URL}/users/me/notifications`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -553,7 +588,8 @@ const Dashboard = () => {
           })),
         };
 
-        await fetch('http://localhost:5001/api/users/me', {
+        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
+        await fetch(`${API_BASE_URL}/users/me`, {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -574,7 +610,7 @@ const Dashboard = () => {
         setCareerRoadmap(updatedLocalRoadmap);
 
         // ADD NOTIFICATION TO BACKEND
-        await fetch('http://localhost:5001/api/users/me/notifications', {
+        await fetch(`${API_BASE_URL}/users/me/notifications`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -603,7 +639,8 @@ const Dashboard = () => {
   // Handle change career goal (reselect role)
   const handleChangeGoal = () => {
     if (confirm('Are you sure you want to change your career goal? This will redirect you to select a new role.')) {
-      navigate('/role-selection');
+      // Add query param to indicate user is changing goal (already has resume)
+      navigate('/role-selection?changeGoal=true');
     }
   };
 
@@ -734,7 +771,6 @@ const Dashboard = () => {
           
           const completed = allSkillsApproved;
           const unlocked = isPreviousPhaseCompleted;
-          const isExpanded = selectedPhase === phaseIndex;
 
           return (
             <Card 

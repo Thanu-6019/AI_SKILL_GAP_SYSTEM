@@ -376,8 +376,9 @@ const AnalysisResult = () => {
                 missingSkills: skillGapData?.missingSkills?.length,
                 careerRoadmap: careerRoadmap?.length,
               });
-              navigate('/dashboard');
-              console.log('✅ [AnalysisResult] navigate("/dashboard") executed');
+              // Add roleChanged=true to use fresh context data instead of loading from backend
+              navigate('/dashboard?roleChanged=true');
+              console.log('✅ [AnalysisResult] navigate("/dashboard?roleChanged=true") executed');
             }}
             icon={ArrowRightIcon}
             className="bg-white text-blue-600 hover:bg-slate-100 shadow-xl"

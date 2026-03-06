@@ -542,6 +542,14 @@ export const SkillGapProvider = ({ children }) => {
       console.log('💾 [SkillGapContext] Data will be saved to localStorage by useEffect hooks');
       console.log('📊 Final missing skills count:', computedMissingSkills.length);
       console.log('🗺️ Final roadmap phases:', computedCareerRoadmap.length);
+      console.log('🔍 [SkillGapContext] Verify roadmap data after setCareerRoadmap:');
+      if (computedCareerRoadmap.length > 0) {
+        console.log('   Phase 1:', computedCareerRoadmap[0].title || computedCareerRoadmap[0].phase);
+        console.log('   Phase 1 skills:', computedCareerRoadmap[0].skills?.length, 'skills');
+        console.log('   Phase 1 skills array:', computedCareerRoadmap[0].skills);
+        console.log('   Phase 1 resources:', computedCareerRoadmap[0].resources?.length, 'resources');
+        console.log('   Phase 1 resources array:', computedCareerRoadmap[0].resources);
+      }
 
       // SAVE TO BACKEND: Update user profile with role selection and roadmap
       try {

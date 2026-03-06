@@ -11,6 +11,28 @@ const Navbar = ({ onMenuClick }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
 
+  // Generate course links for a skill
+  const generateCourseLinks = (skillName) => {
+    const encodedSkill = encodeURIComponent(skillName);
+    return [
+      {
+        platform: 'Udemy',
+        url: `https://www.udemy.com/courses/search/?q=${encodedSkill}`,
+        icon: '📚'
+      },
+      {
+        platform: 'Coursera',
+        url: `https://www.coursera.org/search?query=${encodedSkill}`,
+        icon: '🎓'
+      },
+      {
+        platform: 'YouTube',
+        url: `https://www.youtube.com/results?search_query=${encodedSkill}+tutorial`,
+        icon: '▶️'
+      }
+    ];
+  };
+
   // Search logic
   const searchResults = () => {
     if (!searchQuery.trim()) return [];
@@ -18,18 +40,27 @@ const Navbar = ({ onMenuClick }) => {
     const query = searchQuery.toLowerCase().trim();
     const results = [];
 
-    // Search in skills
+    // Search in skills - now with course links
     extractedSkills?.forEach(skill => {
       const skillName = typeof skill === 'string' ? skill : skill.name;
       if (skillName?.toLowerCase().includes(query)) {
-        results.push({ type: 'skill', name: skillName, path: '/dashboard/skills' });
+        results.push({ 
+          type: 'skill', 
+          name: skillName, 
+          courseLinks: generateCourseLinks(skillName)
+        });
       }
     });
 
     // Search in courses
     recommendedCourses?.forEach(course => {
       if (course.title?.toLowerCase().includes(query)) {
-        results.push({ type: 'course', name: course.title, path: '/dashboard' });
+        results.push({ 
+          type: 'course', 
+          name: course.title, 
+          url: course.url || course.link,
+          platform: course.platform
+        });
       }
     });
 
@@ -41,8 +72,13 @@ const Navbar = ({ onMenuClick }) => {
     setShowSearchResults(e.target.value.length > 0);
   };
 
-  const handleResultClick = (path) => {
-    navigate(path);
+  const handleResultClick = (url) => {
+    if (url) {
+      console.log('🔗 Opening course link:', url);
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } else {
+      console.warn('⚠️ No URL provided to handleResultClick');
+    }
     setSearchQuery('');
     setShowSearchResults(false);
   };
@@ -86,21 +122,50 @@ const Navbar = ({ onMenuClick }) => {
                   {searchResults().length > 0 ? (
                     <div className="p-2">
                       {searchResults().map((result, index) => (
-                        <button
-                          key={index}
-                          onClick={() => handleResultClick(result.path)}
-                          className="w-full text-left px-4 py-3 hover:bg-slate-700 rounded-lg transition-colors"
-                        >
-                          <div className="flex items-center space-x-3">
-                            <span className="text-blue-400 text-sm font-medium">
-                              {result.type === 'skill' ? '🎯' : '📚'}
-                            </span>
-                            <div>
-                              <p className="text-white font-medium">{result.name}</p>
-                              <p className="text-xs text-slate-400 capitalize">{result.type}</p>
+                        <div key={index} className="mb-2 last:mb-0">
+                          {result.type === 'skill' ? (
+                            <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-700">
+                              <div className="flex items-center space-x-3 mb-2">
+                                <span className="text-blue-400 text-sm font-medium">🎯</span>
+                                <div className="flex-1">
+                                  <p className="text-white font-medium">{result.name}</p>
+                                  <p className="text-xs text-slate-400">Skill - Click platform to learn</p>
+                                </div>
+                              </div>
+                              <div className="flex gap-2 mt-2">
+                                {result.courseLinks.map((link, linkIndex) => (
+                                  <button
+                                    key={linkIndex}
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      handleResultClick(link.url);
+                                    }}
+                                    className="flex-1 px-3 py-2 bg-slate-800 hover:bg-blue-600 text-white text-xs rounded-lg transition-colors border border-slate-600 hover:border-blue-500"
+                                  >
+                                    <span className="mr-1">{link.icon}</span>
+                                    {link.platform}
+                                  </button>
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                        </button>
+                          ) : (
+                            <button
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                handleResultClick(result.url);
+                              }}
+                              className="w-full text-left px-4 py-3 hover:bg-slate-700 rounded-lg transition-colors"
+                            >
+                              <div className="flex items-center space-x-3">
+                                <span className="text-blue-400 text-sm font-medium">📚</span>
+                                <div>
+                                  <p className="text-white font-medium">{result.name}</p>
+                                  <p className="text-xs text-slate-400">{result.platform || 'Course'}</p>
+                                </div>
+                              </div>
+                            </button>
+                          )}
+                        </div>
                       ))}
                     </div>
                   ) : (

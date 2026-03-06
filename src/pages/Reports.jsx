@@ -26,7 +26,8 @@ const Reports = () => {
         }
 
         console.log('🔄 [Reports] Fetching user data from backend...');
-        const response = await fetch('http://localhost:5001/api/users/me', {
+        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
+        const response = await fetch(`${API_BASE_URL}/users/me`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
@@ -63,7 +64,7 @@ const Reports = () => {
 
           // Transform and set roadmap
           if (user.roadmap && user.roadmap.phases && user.roadmap.phases.length > 0) {
-            const transformedRoadmap = user.roadmap.phases.map((phase, idx) => ({
+            const transformedRoadmap = user.roadmap.phases.map((phase) => ({
               phase: phase.title,
               title: phase.title,
               duration: phase.duration,
@@ -77,62 +78,72 @@ const Reports = () => {
             setCareerRoadmap(transformedRoadmap);
             console.log('✅ [Reports] Set roadmap with', transformedRoadmap.length, 'phases');
             
-            // Extract all unique skills
-            const allSkills = [];
-            user.roadmap.phases.forEach(phase => {
-              if (phase.skills && Array.isArray(phase.skills)) {
-                phase.skills.forEach(skill => {
-                  const skillName = typeof skill === 'string' ? skill : skill.name;
-                  if (!allSkills.find(s => (typeof s === 'string' ? s : s.name) === skillName)) {
-                    allSkills.push(skill);
-                  }
-                });
+            // FIXED: Use resumeSkills from backend instead of extracting from roadmap
+            // ExtractedSkills should be the user's RESUME skills, not roadmap skills
+            if (user.resumeSkills && user.resumeSkills.length > 0) {
+              setExtractedSkills(user.resumeSkills);
+              console.log('✅ [Reports] Set extracted skills from resume:', user.resumeSkills.length);
+            } else if (!extractedSkills || extractedSkills.length === 0) {
+              // Fallback: If no resume skills in backend and context is empty, extract from roadmap
+              // This is only for backward compatibility with old data
+              const allSkills = [];
+              user.roadmap.phases.forEach(phase => {
+                if (phase.skills && Array.isArray(phase.skills)) {
+                  phase.skills.forEach(skill => {
+                    const skillName = typeof skill === 'string' ? skill : skill.name;
+                    if (!allSkills.find(s => (typeof s === 'string' ? s : s.name) === skillName)) {
+                      allSkills.push(skill);
+                    }
+                  });
+                }
+              });
+              
+              if (allSkills.length > 0) {
+                console.warn('⚠️ [Reports] No resumeSkills in backend, using roadmap skills as fallback');
+                setExtractedSkills(allSkills);
               }
-            });
-            
-            if (allSkills.length > 0) {
-              setExtractedSkills(allSkills);
-              console.log('✅ [Reports] Set extracted skills:', allSkills.length);
             }
 
-            // Calculate overall score based on skill matching, not completion
-            // Extract user's resume skills
-            const userSkillNames = (user.skills || []).map(s => 
-              (typeof s === 'string' ? s : s.name).toLowerCase().trim()
-            );
+            // FIXED: Calculate overall score based on COMPLETED skills (certificates uploaded)
+            let totalRequiredSkills = 0;
+            let completedSkills = 0;
 
-            // Extract required skills from roadmap
-            const requiredSkillNames = [];
             user.roadmap.phases.forEach(phase => {
               if (phase.skills && Array.isArray(phase.skills)) {
                 phase.skills.forEach(skill => {
-                  const skillName = (typeof skill === 'string' ? skill : skill.name).toLowerCase().trim();
-                  if (!requiredSkillNames.includes(skillName)) {
-                    requiredSkillNames.push(skillName);
+                  totalRequiredSkills++;
+                  // Check if skill is approved (certificate uploaded)
+                  const isApproved = typeof skill === 'object' && skill.approved === true;
+                  if (isApproved) {
+                    completedSkills++;
                   }
                 });
               }
             });
 
-            // Calculate matched skills
-            const matchedSkills = userSkillNames.filter(skill => 
-              requiredSkillNames.includes(skill)
-            );
-
-            // Calculate overall score as match percentage
-            const overallScore = requiredSkillNames.length > 0 
-              ? Math.round((matchedSkills.length / requiredSkillNames.length) * 100)
+            // Calculate overall score as completion percentage
+            const overallScore = totalRequiredSkills > 0 
+              ? Math.round((completedSkills / totalRequiredSkills) * 100)
               : 0;
 
-            // Get missing skills
+            console.log('📊 [Reports] Score Calculation:', {
+              totalRequiredSkills,
+              completedSkills,
+              overallScore
+            });
+
+            // Get missing skills (not yet completed)
             const missingSkills = [];
             user.roadmap.phases.forEach((phase, phaseIdx) => {
               if (phase.skills && Array.isArray(phase.skills)) {
-                phase.skills.forEach((skill, skillIdx) => {
-                  const skillName = (typeof skill === 'string' ? skill : skill.name).toLowerCase().trim();
-                  if (!userSkillNames.includes(skillName)) {
+                phase.skills.forEach((skill) => {
+                  const isApproved = typeof skill === 'object' && skill.approved === true;
+                  const skillName = typeof skill === 'string' ? skill : skill.name;
+                  
+                  // Only add to missing if NOT approved/completed
+                  if (!isApproved) {
                     missingSkills.push({
-                      name: typeof skill === 'string' ? skill : skill.name,
+                      name: skillName,
                       priority: phaseIdx === 0 ? 'High' : 'Medium',
                       gap: 100,
                       learningTime: phase.duration || '2-3 months'
@@ -142,23 +153,33 @@ const Reports = () => {
               }
             });
 
+            // Get completed (approved) skills for strong skills list
+            const completedSkillsList = [];
+            user.roadmap.phases.forEach(phase => {
+              if (phase.skills && Array.isArray(phase.skills)) {
+                phase.skills.forEach(skill => {
+                  const isApproved = typeof skill === 'object' && skill.approved === true;
+                  if (isApproved) {
+                    completedSkillsList.push(skill);
+                  }
+                });
+              }
+            });
+
             setSkillGapData({
               overallScore,
               missingSkills,
               weakSkills: [],
-              strongSkills: allSkills.filter(s => {
-                const skillName = (typeof s === 'string' ? s : s.name).toLowerCase().trim();
-                return userSkillNames.includes(skillName);
-              }),
+              strongSkills: completedSkillsList,
               aiConfidence: 95,
             });
 
             console.log('✅ [Reports] Calculated skillGapData:', {
               overallScore,
-              userSkills: userSkillNames.length,
-              requiredSkills: requiredSkillNames.length,
-              matchedSkills: matchedSkills.length,
-              missingSkills: missingSkills.length
+              totalRequiredSkills,
+              completedSkills,
+              missingSkills: missingSkills.length,
+              strongSkills: completedSkillsList.length
             });
           }
         } else {
@@ -173,6 +194,7 @@ const Reports = () => {
     };
 
     loadUserDataFromBackend();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty dependency array - only run once on mount
 
   // SKILL MATCH CALCULATION FIX

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   BriefcaseIcon,
   CurrencyDollarIcon,
@@ -15,6 +15,8 @@ import { Button, Badge } from '../components/ui';
 
 const RoleSelection = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isChangingGoal = searchParams.get('changeGoal') === 'true';
   const { matchedRoles, extractedSkills, selectedRole, calculateSkillGap } = useSkillGap();
   const [selectedRoleId, setSelectedRoleId] = useState(null);
   const [shouldNavigate, setShouldNavigate] = useState(false);
@@ -84,11 +86,17 @@ const RoleSelection = () => {
   ];
 
   useEffect(() => {
-    // Redirect if no matched roles
+    // Redirect if no matched roles AND user is NOT changing goal
+    // If changing goal, user already has a resume - show explore roles instead
     if (!matchedRoles || matchedRoles.length === 0) {
-      navigate('/upload');
+      if (!isChangingGoal) {
+        console.log('⚠️ No matched roles and not changing goal - redirecting to upload');
+        navigate('/upload');
+      } else {
+        console.log('✅ Changing goal - staying on page to show explore roles');
+      }
     }
-  }, [matchedRoles, navigate]);
+  }, [matchedRoles, navigate, isChangingGoal]);
 
   // Navigate after skill gap calculation completes
   useEffect(() => {
@@ -103,15 +111,22 @@ const RoleSelection = () => {
     setSelectedRoleId(role.id);
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     const role = matchedRoles.find(r => r.id === selectedRoleId);
     console.log('📍 Continue clicked. Selected role:', role?.title);
     console.log('📊 Current context - extractedSkills:', extractedSkills?.length, 'matchedRoles:', matchedRoles?.length);
     
     if (role) {
       console.log('✅ Calculating skill gap for:', role.title);
-      calculateSkillGap(role);
-      setShouldNavigate(true);
+      try {
+        // Wait for calculateSkillGap to complete before navigating
+        await calculateSkillGap(role);
+        console.log('✅ Skill gap calculation completed, navigating to analysis...');
+        setShouldNavigate(true);
+      } catch (error) {
+        console.error('❌ Error calculating skill gap:', error);
+        alert('Failed to calculate skill gap. Please try again.');
+      }
     } else {
       console.log('❌ No role selected');
     }
@@ -149,6 +164,14 @@ const RoleSelection = () => {
               </div>
               <span className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">SkillBridge AI</span>
             </div>
+            {isChangingGoal && (
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="text-slate-400 hover:text-white transition-colors flex items-center space-x-2"
+              >
+                <span>← Back to Dashboard</span>
+              </button>
+            )}
           </div>
           </div>
         </div>
@@ -157,7 +180,8 @@ const RoleSelection = () => {
       {/* Main Content */}
       <div className="w-full px-4 sm:px-6 lg:px-8 py-12">
         <div className="max-w-7xl mx-auto">
-        {/* Progress Steps */}
+        {/* Progress Steps - Only show for normal flow, not when changing goal */}
+        {!isChangingGoal && (
         <div className="mb-12">
           <div className="flex items-center justify-center space-x-4">
             <div className="flex items-center space-x-2">
@@ -181,20 +205,29 @@ const RoleSelection = () => {
             </div>
           </div>
         </div>
+        )}
 
         {/* Header Section */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full mb-6 shadow-2xl shadow-blue-500/30">
             <BriefcaseIcon className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-5xl font-bold text-white mb-4">Select Your Target Role</h1>
+          <h1 className="text-5xl font-bold text-white mb-4">
+            {isChangingGoal ? 'Change Your Career Goal' : 'Select Your Target Role'}
+          </h1>
           <p className="text-xl text-slate-400 max-w-3xl mx-auto">
-            Based on your skills, we've identified {matchedRoles.length} roles that match your profile. 
-            Select one to get a detailed skill gap analysis and personalized learning path.
+            {isChangingGoal && (!matchedRoles || matchedRoles.length === 0) ? (
+              <>Explore new career paths below and find your next opportunity.</>
+            ) : (
+              <>Based on your skills, we've identified {matchedRoles?.length || 0} roles that match your profile. 
+              Select one to get a detailed skill gap analysis and personalized learning path.</>
+            )}
           </p>
         </div>
 
-        {/* AI Recommended Roles Label */}
+        {/* AI Recommended Roles Label - Only show if we have matched roles */}
+        {matchedRoles && matchedRoles.length > 0 && (
+          <>
         <div className="mb-6">
           <div className="flex items-center space-x-3">
             <SparklesIcon className="w-6 h-6 text-blue-400" />
@@ -205,6 +238,7 @@ const RoleSelection = () => {
         </div>
 
         {/* Extracted Skills Summary */}
+        {extractedSkills && extractedSkills.length > 0 && (
         <div className="bg-gradient-to-r from-blue-600/10 to-purple-600/10 rounded-2xl p-6 mb-12 border border-blue-500/30">
           <div className="flex items-center space-x-3 mb-4">
             <SparklesIcon className="w-6 h-6 text-blue-400" />
@@ -218,6 +252,7 @@ const RoleSelection = () => {
             ))}
           </div>
         </div>
+        )}
 
         {/* Roles Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
@@ -309,7 +344,7 @@ const RoleSelection = () => {
           ))}
         </div>
 
-        {/* Action Buttons */}
+        {/* Action Buttons - Only show if we have matched roles */}
         <div className="flex items-center justify-center space-x-4 mb-16">
           <button
             onClick={() => navigate('/upload')}
@@ -336,16 +371,24 @@ const RoleSelection = () => {
             <span className="px-4 bg-[#0f172a] text-slate-500 text-sm font-medium">OR</span>
           </div>
         </div>
+        </>
+        )}
 
-        {/* Explore Other Career Paths Section */}
+        {/* Explore Other Career Paths Section - Always show, especially for users changing goal */}
         <div className="mb-12">
           <div className="flex items-center space-x-3 mb-6">
             <LightBulbIcon className="w-6 h-6 text-amber-400" />
-            <h2 className="text-2xl font-bold text-white">Explore Other Career Paths</h2>
+            <h2 className="text-2xl font-bold text-white">
+              {isChangingGoal && (!matchedRoles || matchedRoles.length === 0) 
+                ? 'Available Career Paths' 
+                : 'Explore Other Career Paths'}
+            </h2>
             <Badge variant="warning" className="ml-2">Career Switch</Badge>
           </div>
           <p className="text-slate-400 mb-8 ml-9">
-            Discover new opportunities beyond your current skill set. These roles may require additional training but offer exciting career pivots.
+            {isChangingGoal && (!matchedRoles || matchedRoles.length === 0)
+              ? 'Select a new career goal from these available paths. Click "Explore Path" to see detailed requirements and start tracking your progress.'
+              : 'Discover new opportunities beyond your current skill set. These roles may require additional training but offer exciting career pivots.'}
           </p>
 
           {/* Explore Roles Grid */}

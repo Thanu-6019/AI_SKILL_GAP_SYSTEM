@@ -4,12 +4,12 @@ import { Button } from '../components/ui';
 const Landing = () => {
   const navigate = useNavigate();
 
-  const handleGetStarted = () => {
-    navigate('/auth?mode=signup');
+  const handleLogin = () => {
+    navigate('/auth?mode=login');
   };
 
-  const handleLearnMore = () => {
-    document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
+  const handleSignUp = () => {
+    navigate('/auth?mode=signup');
   };
 
   return (
@@ -37,19 +37,19 @@ const Landing = () => {
             <span className="text-cyan-400 font-semibold">SkillBridge AI</span> empowers your career growth with cutting-edge AI technology, offering personalized recommendations and resources tailored to your professional journey.
           </p>
           
-          {/* Action Buttons */}
+          {/* Action Buttons - Login and Sign Up Only */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mt-12">
             <button
-              onClick={handleGetStarted}
+              onClick={handleLogin}
               className="px-10 py-4 text-lg font-semibold text-white bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 rounded-lg shadow-2xl hover:shadow-cyan-500/50 transition-all duration-300 transform hover:scale-105"
             >
-              Get Started
+              Login
             </button>
             <button
-              onClick={handleLearnMore}
+              onClick={handleSignUp}
               className="px-10 py-4 text-lg font-semibold text-white border-2 border-cyan-500 hover:bg-cyan-500/10 rounded-lg transition-all duration-300 transform hover:scale-105"
             >
-              Learn More
+              Sign Up
             </button>
           </div>
         </div>
